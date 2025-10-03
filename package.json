@@ -1,11 +1,12 @@
 {
-  "name": "documenta-bug",
-  "version": "1.0.0",
-  "description": "",
+  "name": "documenta-bug-refactored",
+  "version": "2.0.0",
+  "description": "Sistema de Documentação Técnica - Infinitibank",
   "main": "app.js",
   "scripts": {
-    "test": "test",
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "10kk",
   "license": "ISC",
@@ -13,5 +14,11 @@
     "ejs": "^3.1.10",
     "express": "^5.1.0",
     "mongoose": "^8.19.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

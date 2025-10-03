@@ -3,225 +3,519 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= documentacao.tituloDocumento || 'Documentação Técnica' %></title>
+    <title><%= documentacao.tituloDocumento %></title>
     
     <style>
-        /* Estilos Simples para Documento/PDF-like */
-        body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            line-height: 1.6;
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .no-print {
+                display: none !important;
+            }
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+            .section {
+                page-break-inside: avoid;
+            }
+        }
+
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #ffffff; /* Fundo branco puro */
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            line-height: 1.6;
             color: #333;
+            background: #fff;
+            padding: 20px;
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
-            border: 1px solid #eee; /* Borda sutil para dar o aspecto de documento */
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            background: white;
         }
 
-        /* Títulos */
-        h1 {
-            color: #1a1a1a;
-            border-bottom: 3px solid #666; /* Linha de divisão escura */
-            padding-bottom: 10px;
-            margin-top: 0;
-            font-size: 2em;
+        /* Cabeçalho do Documento */
+        .doc-header {
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        h2 {
-            color: #333;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
-            margin-top: 25px;
-            font-size: 1.6em;
+        .doc-header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
         }
 
-        h3, h4 {
-            color: #555;
+        .doc-info {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
             margin-top: 15px;
-            font-size: 1.2em;
+            font-size: 0.9em;
         }
 
-        /* Índice e Links */
-        ol {
+        .doc-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        /* Índice */
+        .index {
+            background: #f8f9fa;
+            padding: 25px;
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+
+        .index h2 {
+            color: #0d6efd;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .index ol {
             padding-left: 25px;
         }
-        ol li {
-            margin-bottom: 5px;
+
+        .index li {
+            margin-bottom: 8px;
+            color: #555;
         }
-        a {
-            color: #007bff;
+
+        .index a {
+            color: #0d6efd;
             text-decoration: none;
+            transition: all 0.3s;
         }
-        a:hover {
+
+        .index a:hover {
+            color: #0a58ca;
             text-decoration: underline;
         }
 
-        /* Listas de Detalhes (infoGeral) */
-        ul {
+        /* Seções */
+        .section {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            color: #0d6efd;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #0d6efd;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: #495057;
+            font-size: 1.4em;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        h4 {
+            color: #6c757d;
+            font-size: 1.2em;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        /* Conteúdo - Info Geral */
+        .info-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .info-list ul {
             list-style: none;
-            padding-left: 20px;
+            padding: 0;
         }
-        ul li {
-            margin-bottom: 4px;
+
+        .info-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #dee2e6;
         }
-        ul li::before {
-            content: "•";
-            color: #007bff; /* Marcadores de lista azuis */
-            font-weight: bold;
+
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+
+        .info-list strong {
+            color: #0d6efd;
             display: inline-block;
-            width: 1em;
-            margin-left: -1em;
+            min-width: 180px;
+        }
+
+        /* Credenciais */
+        .credentials {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .credentials::before {
+            content: "⚠️ CREDENCIAIS DE ACESSO";
+            display: block;
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .credentials pre {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ffc107;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.8;
+            color: #333;
+            overflow-x: auto;
+        }
+
+        /* Código/Mapa de Rede */
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #0d6efd;
+        }
+
+        .code-block pre {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
         }
 
         /* Imagens */
-        img {
+        .image-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .image-container img {
             max-width: 100%;
             height: auto;
-            display: block;
-            margin: 20px 0;
-            border: 1px solid #ddd;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
 
-        /* Destaque (Códigos, IPs, Senhas) */
-        pre {
-            background-color: #f9f9f9;
-            border: 1px dashed #ccc;
-            padding: 15px;
-            border-radius: 3px;
-            overflow-x: auto;
-            font-family: 'Consolas', 'Courier New', monospace;
-            white-space: pre-wrap; /* Garante quebras de linha longas */
-            margin: 10px 0;
-        }
-
-        code {
-            font-family: 'Consolas', 'Courier New', monospace;
-            background-color: #f0f0f0;
-            padding: 2px 4px;
-            border-radius: 2px;
-        }
-        
-        /* Credenciais em destaque */
-        .credentials-box {
-            background-color: #fff8e1; /* Fundo amarelo muito claro */
-            border: 1px solid #ffecb3; /* Borda de atenção */
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-
-        .credentials-box pre {
-            background-color: #ffffff;
-            border: 1px solid #ccc;
-        }
-
-        hr {
-            border: 0;
-            height: 1px;
-            background-color: #ddd;
-            margin: 30px 0;
-        }
-        
-        .footer-update {
-            margin-top: 40px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-            color: #777;
+        .image-caption {
+            margin-top: 10px;
+            font-style: italic;
+            color: #6c757d;
             font-size: 0.9em;
-            text-align: right;
+        }
+
+        /* Texto Bruto */
+        .raw-text {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #6c757d;
+            margin: 15px 0;
+            line-height: 1.8;
+        }
+
+        /* Seções Aninhadas */
+        .nested-section {
+            margin-left: 20px;
+            padding-left: 20px;
+            border-left: 3px solid #e0e0e0;
+        }
+
+        /* Rodapé */
+        .doc-footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .footer-info {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .footer-info div {
+            margin: 5px 15px;
+        }
+
+        /* Botões de Ação */
+        .action-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: #0d6efd;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            background: #0a58ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .doc-header h1 {
+                font-size: 1.5em;
+            }
+            
+            .info-list strong {
+                min-width: 120px;
+            }
+
+            .nested-section {
+                margin-left: 10px;
+                padding-left: 10px;
+            }
         }
     </style>
 </head>
 <body>
 
+<div class="action-bar no-print">
+    <button class="btn" onclick="window.print()">🖨️ Imprimir/PDF</button>
+    <button class="btn btn-secondary" onclick="window.close()">✖️ Fechar</button>
+</div>
+
 <div class="container">
-
-    <h1><%= documentacao.tituloDocumento || 'Título Não Definido' %></h1>
-    
-    <h2 id="index">Índice</h2>
-    
-    <ol>
-        <% const secoes = documentacao.secoes || []; %>
-        
-        <% if (secoes.length > 0) { %>
-            <% secoes.forEach((s, i) => { %>
-                <li><a href="#section-<%= i %>"><%= i + 1 %> - <%= s.tituloSecao %></a></li>
-            <% }); %>
-        <% } else { %>
-            <li>Nenhuma seção definida para este documento.</li>
-        <% } %>
-    </ol>
-    <hr>
-    
-    <% if (secoes.length > 0) { %>
-        <% secoes.forEach((s, i) => { %>
-            
-            <h2 id="section-<%= i %>"><%= i + 1 %> - <%= s.tituloSecao %></h2>
-            <% if (s.subtituloSecao) { %>
-                <h3><%= s.subtituloSecao %></h3>
-            <% } %>
-
-            <% 
-                const conteudo = s.conteudo || {}; 
-                const detalhes = conteudo.detalhes || []; 
-            %>
-            
-            <% switch (s.tipoConteudo) {
-                case 'imagem': %>
-                    <img src="<%= conteudo.urlImagem || '' %>" alt="<%= conteudo.altImagem || s.tituloSecao %>" />
-                <% break;
-                
-                case 'credenciais': %>
-                    <div class="credentials-box">
-                        <% if (conteudo.textoBruto) { %>
-                             <pre><%= conteudo.textoBruto %></pre>
-                        <% } else if (detalhes.length > 0) { %>
-                            <pre>
-                                <% detalhes.forEach(d => { %>
-                                    <%= d.rotulo || '' %>: <%= d.valor || '' %>
-                                <% }); %>
-                            </pre>
-                        <% } else { %>
-                            <p>Credenciais não informadas.</p>
-                        <% } %>
-                    </div>
-                <% break;
-                
-                case 'infoGeral': %>
-                    <ul>
-                        <% detalhes.forEach(d => { %>
-                            <li><strong><%= d.rotulo || '' %></strong>: <%= d.valor || '' %></li>
-                        <% }); %>
-                    </ul>
-                    <% if (conteudo.textoBruto) { %>
-                        <p><%= conteudo.textoBruto %></p>
-                    <% } %>
-                <% break;
-                
-                case 'mapaRede':
-                case 'blocoCodigo': %>
-                    <h4><%= s.tipoConteudo === 'mapaRede' ? 'Mapa de Rede' : 'Bloco de Código/Texto Bruto' %></h4>
-                    <pre><code><%= conteudo.textoBruto || 'Nenhum conteúdo fornecido.' %></code></pre>
-                <% break;
-            } %>
-            
-            <% if (i < secoes.length - 1) { %>
-                <hr />
-            <% } %>
-        <% }); %>
-    <% } %>
-
-    <div class="footer-update">
-        <strong>Última Atualização</strong>: <%= new Date(documentacao.ultimaAtualizacao).toLocaleString('pt-BR') %>
+    <!-- Cabeçalho do Documento -->
+    <div class="doc-header">
+        <h1><%= documentacao.tituloDocumento %></h1>
+        <div class="doc-info">
+            <div class="doc-badge">
+                📋 ID: <%= documentacao.identificador %>
+            </div>
+            <div class="doc-badge">
+                📅 <%= new Date(documentacao.ultimaAtualizacao).toLocaleDateString('pt-BR') %>
+            </div>
+            <div class="doc-badge">
+                🏢 Infinitibank
+            </div>
+        </div>
     </div>
 
+    <!-- Índice -->
+    <% const secoes = documentacao.secoes || []; %>
+    <% if (secoes.length > 0) { %>
+    <div class="index">
+        <h2>📑 Índice</h2>
+        <ol>
+            <% secoes.forEach((s, i) => { %>
+                <li>
+                    <a href="#section-<%= i %>"><%= s.tituloSecao %></a>
+                    <% if (s.secoesAninhadas && s.secoesAninhadas.length > 0) { %>
+                        <ol style="margin-top: 5px;">
+                            <% s.secoesAninhadas.forEach((sub, j) => { %>
+                                <li><a href="#section-<%= i %>-<%= j %>"><%= sub.tituloSecao %></a></li>
+                            <% }); %>
+                        </ol>
+                    <% } %>
+                </li>
+            <% }); %>
+        </ol>
+    </div>
+    <% } %>
+
+    <!-- Conteúdo Principal -->
+    <% if (secoes.length > 0) { %>
+        <% secoes.forEach((s, i) => { %>
+            <div class="section" id="section-<%= i %>">
+                <h2><%= i + 1 %>. <%= s.tituloSecao %></h2>
+                
+                <% if (s.subtituloSecao) { %>
+                    <h3><%= s.subtituloSecao %></h3>
+                <% } %>
+
+                <%- renderConteudo(s.tipoConteudo, s.conteudo) %>
+
+                <!-- Seções Aninhadas -->
+                <% if (s.secoesAninhadas && s.secoesAninhadas.length > 0) { %>
+                    <div class="nested-section">
+                        <% s.secoesAninhadas.forEach((sub, j) => { %>
+                            <div id="section-<%= i %>-<%= j %>" style="margin-top: 25px;">
+                                <h3><%= i + 1 %>.<%= j + 1 %>. <%= sub.tituloSecao %></h3>
+                                
+                                <% if (sub.subtituloSecao) { %>
+                                    <h4><%= sub.subtituloSecao %></h4>
+                                <% } %>
+
+                                <%- renderConteudo(sub.tipoConteudo, sub.conteudo) %>
+
+                                <!-- Mais níveis aninhados (recursivo) -->
+                                <% if (sub.secoesAninhadas && sub.secoesAninhadas.length > 0) { %>
+                                    <div class="nested-section">
+                                        <% sub.secoesAninhadas.forEach((subsub, k) => { %>
+                                            <div style="margin-top: 20px;">
+                                                <h4><%= i + 1 %>.<%= j + 1 %>.<%= k + 1 %>. <%= subsub.tituloSecao %></h4>
+                                                <%- renderConteudo(subsub.tipoConteudo, subsub.conteudo) %>
+                                            </div>
+                                        <% }); %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } %>
+            </div>
+        <% }); %>
+    <% } else { %>
+        <div class="section">
+            <p style="text-align: center; color: #6c757d; padding: 40px;">
+                ℹ️ Este documento não possui seções cadastradas.
+            </p>
+        </div>
+    <% } %>
+
+    <!-- Rodapé -->
+    <div class="doc-footer">
+        <strong>Documentação Técnica - Infinitibank</strong>
+        <div class="footer-info">
+            <div>
+                <strong>Identificador:</strong> <%= documentacao.identificador %>
+            </div>
+            <div>
+                <strong>Última Atualização:</strong> 
+                <%= new Date(documentacao.ultimaAtualizacao).toLocaleString('pt-BR') %>
+            </div>
+            <div>
+                <strong>Gerado em:</strong> <%= new Date().toLocaleString('pt-BR') %>
+            </div>
+        </div>
+    </div>
 </div>
+
+<%
+// Função auxiliar para renderizar conteúdo
+function renderConteudo(tipo, conteudo) {
+    if (!conteudo) return '';
+    
+    let html = '';
+    
+    switch(tipo) {
+        case 'infoGeral':
+            if (conteudo.textoBruto) {
+                html += `<div class="raw-text">${conteudo.textoBruto.replace(/\n/g, '<br>')}</div>`;
+            }
+            if (conteudo.detalhes && conteudo.detalhes.length > 0) {
+                html += '<div class="info-list"><ul>';
+                conteudo.detalhes.forEach(d => {
+                    html += `<li><strong>${d.rotulo}:</strong> ${d.valor}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            break;
+            
+        case 'credenciais':
+            html += '<div class="credentials">';
+            if (conteudo.textoBruto) {
+                html += `<pre>${conteudo.textoBruto}</pre>`;
+            } else if (conteudo.detalhes && conteudo.detalhes.length > 0) {
+                html += '<pre>';
+                conteudo.detalhes.forEach(d => {
+                    html += `${d.rotulo}: ${d.valor}\n`;
+                });
+                html += '</pre>';
+            }
+            html += '</div>';
+            break;
+            
+        case 'mapaRede':
+        case 'blocoCodigo':
+            html += '<div class="code-block">';
+            html += `<pre>${conteudo.textoBruto || 'Nenhum conteúdo fornecido.'}</pre>`;
+            html += '</div>';
+            break;
+            
+        case 'imagem':
+            if (conteudo.urlImagem) {
+                html += '<div class="image-container">';
+                html += `<img src="${conteudo.urlImagem}" alt="${conteudo.altImagem || 'Imagem'}">`;
+                if (conteudo.altImagem) {
+                    html += `<div class="image-caption">${conteudo.altImagem}</div>`;
+                }
+                html += '</div>';
+            }
+            if (conteudo.textoBruto) {
+                html += `<div class="raw-text">${conteudo.textoBruto.replace(/\n/g, '<br>')}</div>`;
+            }
+            break;
+    }
+    
+    return html;
+}
+%>
 
 </body>
 </html>

@@ -1,0 +1,275 @@
+# 🚀 Guia de Instalação - Sistema de Documentação Técnica
+
+## 📋 Pré-requisitos
+
+- **Node.js** >= 18.0.0
+- **MongoDB** (local ou remoto)
+- **Git** (opcional)
+
+---
+
+## 🔧 Instalação
+
+### 1️⃣ Instalar Dependências
+
+```bash
+npm install
+```
+
+### 2️⃣ Configurar MongoDB
+
+#### Opção A: MongoDB Local (Padrão)
+O sistema já está configurado para MongoDB local:
+```
+mongodb://127.0.0.1:27017/infra_docs
+```
+
+#### Opção B: MongoDB Remoto (Atlas ou outro)
+Edite o arquivo `src/config/dbConnect.js`:
+
+```javascript
+const MONGO_URI = process.env.MONGO_URI || 'sua_connection_string_aqui';
+```
+
+Ou use variável de ambiente:
+```bash
+export MONGO_URI="mongodb+srv://usuario:senha@cluster.mongodb.net/infra_docs"
+```
+
+---
+
+## 🌐 Configuração para Acesso Externo
+
+### 1️⃣ O arquivo `app.js` já está configurado para acesso externo:
+
+```javascript
+const HOST = '0.0.0.0'; // Aceita conexões de qualquer IP
+const PORT = 1100;
+```
+
+### 2️⃣ Liberar Porta no Firewall (Windows Server)
+
+#### Via PowerShell (Administrador):
+```powershell
+New-NetFirewallRule -DisplayName "Documentacao Infinitibank" -Direction Inbound -LocalPort 1100 -Protocol TCP -Action Allow
+```
+
+#### Via Interface Gráfica:
+1. Abra `Windows Defender Firewall` > `Configurações Avançadas`
+2. Clique em `Regras de Entrada` > `Nova Regra`
+3. Tipo: **Porta**
+4. Protocolo: **TCP**, Porta: **1100**
+5. Ação: **Permitir conexão**
+6. Nome: **Documentacao Infinitibank**
+
+### 3️⃣ Configurar DNS (Opcional)
+
+Se quiser acessar por nome em vez de IP:
+
+**No Domain Controller (SRVDC01)**:
+1. Abra `DNS Manager`
+2. Zona: `infinitibank.corp`
+3. Criar novo registro A:
+   - Nome: `docs`
+   - IP: `192.168.10.201` (IP do SRVBASE01)
+4. Acesso: `http://docs.infinitibank.corp:1100`
+
+---
+
+## ▶️ Iniciar o Sistema
+
+### Modo Produção:
+```bash
+npm start
+```
+
+### Modo Desenvolvimento (com auto-reload):
+```bash
+npm run dev
+```
+
+### Rodar em Background (PM2 - Recomendado):
+```bash
+# Instalar PM2 globalmente
+npm install -g pm2
+
+# Iniciar aplicação
+pm2 start app.js --name "documentacao-infinitibank"
+
+# Ver logs
+pm2 logs documentacao-infinitibank
+
+# Reiniciar
+pm2 restart documentacao-infinitibank
+
+# Configurar para iniciar com o sistema
+pm2 startup
+pm2 save
+```
+
+---
+
+## 🔗 Acessar o Sistema
+
+### Localmente (no servidor):
+```
+http://localhost:1100
+```
+
+### Na rede interna:
+```
+http://192.168.10.201:1100
+```
+
+### Por nome (se configurou DNS):
+```
+http://docs.infinitibank.corp:1100
+```
+
+---
+
+## 📊 Estrutura de Dados (JSON)
+
+### Exemplo Completo de Documento:
+
+```json
+{
+  "tituloDocumento": "Documentação RACK001 - Físico",
+  "identificador": "RACK001-FISICO",
+  "secoes": [
+    {
+      "tituloSecao": "Visão Geral",
+      "subtituloSecao": "Infraestrutura Principal",
+      "tipoConteudo": "infoGeral",
+      "conteudo": {
+        "textoBruto": "Rack principal contendo firewall, switch e servidores.",
+        "detalhes": [
+          {"rotulo": "Localização", "valor": "Datacenter Principal"},
+          {"rotulo": "Rack ID", "valor": "RACK001"}
+        ]
+      }
+    },
+    {
+      "tituloSecao": "Firewall pfSense",
+      "tipoConteudo": "infoGeral",
+      "conteudo": {
+        "detalhes": [
+          {"rotulo": "IP", "valor": "192.168.10.1"},
+          {"rotulo": "MAC", "valor": "78:9A:18:30:20:3D"}
+        ]
+      },
+      "secoesAninhadas": [
+        {
+          "tituloSecao": "Credenciais de Acesso",
+          "tipoConteudo": "credenciais",
+          "conteudo": {
+            "textoBruto": "Login: admin\nSenha: ,~~taE3J\\UVwD2nX)w\nURL: https://infinitibank.bugbusters.me:40443"
+          }
+        }
+      ]
+    },
+    {
+      "tituloSecao": "Mapa de Rede",
+      "tipoConteudo": "mapaRede",
+      "conteudo": {
+        "textoBruto": "Internet\n  |\n[pfSense] - 192.168.10.1\n  |\n[Switch UniFi]\n  |\n  ├─ SRVBASE01 - 192.168.10.201\n  └─ SRVDC01 - 192.168.10.200"
+      }
+    }
+  ]
+}
+```
+
+### Tipos de Conteúdo Disponíveis:
+
+| Tipo | Uso | Campos |
+|------|-----|--------|
+| `infoGeral` | Informações gerais | `textoBruto`, `detalhes[]` |
+| `credenciais` | Senhas e acessos | `textoBruto` |
+| `mapaRede` | Diagramas ASCII | `textoBruto` |
+| `blocoCodigo` | Código/comandos | `textoBruto` |
+| `imagem` | Imagens/diagramas | `urlImagem`, `altImagem`, `textoBruto` |
+
+---
+
+## 📄 Gerar PDF
+
+### Método 1: Navegador
+1. Acesse um documento
+2. Clique em **"Imprimir/PDF"**
+3. Selecione **"Salvar como PDF"**
+
+### Método 2: Ctrl+P
+1. Abra qualquer documento
+2. Pressione `Ctrl + P`
+3. Escolha destino como PDF
+
+**💡 Dica**: O layout foi otimizado para impressão em A4 com margens de 2cm.
+
+---
+
+## 🔒 Segurança
+
+### Recomendações:
+
+1. **Altere as senhas padrão** dos documentos de exemplo
+2. **Use HTTPS** em produção (configure proxy reverso)
+3. **Restrinja acesso** via firewall para IPs internos apenas
+4. **Faça backups** regulares do MongoDB
+5. **Monitore logs** do sistema
+
+### Backup MongoDB:
+
+```bash
+# Backup
+mongodump --db infra_docs --out /backup/$(date +%Y%m%d)
+
+# Restore
+mongorestore --db infra_docs /backup/20250403/infra_docs
+```
+
+---
+
+## 🐛 Solução de Problemas
+
+### Erro: "Cannot connect to MongoDB"
+- Verifique se MongoDB está rodando: `net start MongoDB` (Windows)
+- Teste conexão: `mongo --eval "db.version()"`
+
+### Erro: "EADDRINUSE" (porta em uso)
+- Altere a porta no `app.js`: `const PORT = 3000;`
+- Ou finalize processo: `netstat -ano | findstr :1100`
+
+### Página não carrega externamente
+- Verifique firewall Windows
+- Teste ping no servidor
+- Confirme que HOST está como `0.0.0.0`
+
+### JSON inválido ao salvar
+- Use validador online: https://jsonlint.com/
+- Verifique vírgulas e aspas
+- Escape caracteres especiais: `\n` para quebra de linha
+
+---
+
+## 📞 Suporte
+
+Para problemas ou dúvidas:
+- **Logs do servidor**: `pm2 logs` ou console do Node
+- **Logs do MongoDB**: `C:\Program Files\MongoDB\Server\X.X\log\`
+- **Documentação MongoDB**: https://docs.mongodb.com/
+
+---
+
+## 🎯 Próximos Passos
+
+1. ✅ Importar documentação existente do PDF fornecido
+2. ✅ Configurar backup automático
+3. ✅ Configurar HTTPS (opcional)
+4. ✅ Criar usuários com diferentes permissões (futuro)
+5. ✅ Integrar com Active Directory (futuro)
+
+---
+
+**Versão**: 2.0.0  
+**Última Atualização**: Outubro 2025  
+**Desenvolvido para**: Infinitibank
