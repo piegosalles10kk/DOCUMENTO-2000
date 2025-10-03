@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= documentacao.tituloDocumento || 'Documentação Técnica' %></title>
+    
+    <style>
+        /* Estilos Simples para Documento/PDF-like */
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #ffffff; /* Fundo branco puro */
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #eee; /* Borda sutil para dar o aspecto de documento */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Títulos */
+        h1 {
+            color: #1a1a1a;
+            border-bottom: 3px solid #666; /* Linha de divisão escura */
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 2em;
+        }
+
+        h2 {
+            color: #333;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-top: 25px;
+            font-size: 1.6em;
+        }
+
+        h3, h4 {
+            color: #555;
+            margin-top: 15px;
+            font-size: 1.2em;
+        }
+
+        /* Índice e Links */
+        ol {
+            padding-left: 25px;
+        }
+        ol li {
+            margin-bottom: 5px;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Listas de Detalhes (infoGeral) */
+        ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+        ul li {
+            margin-bottom: 4px;
+        }
+        ul li::before {
+            content: "•";
+            color: #007bff; /* Marcadores de lista azuis */
+            font-weight: bold;
+            display: inline-block;
+            width: 1em;
+            margin-left: -1em;
+        }
+
+        /* Imagens */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+
+        /* Destaque (Códigos, IPs, Senhas) */
+        pre {
+            background-color: #f9f9f9;
+            border: 1px dashed #ccc;
+            padding: 15px;
+            border-radius: 3px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre-wrap; /* Garante quebras de linha longas */
+            margin: 10px 0;
+        }
+
+        code {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+        
+        /* Credenciais em destaque */
+        .credentials-box {
+            background-color: #fff8e1; /* Fundo amarelo muito claro */
+            border: 1px solid #ffecb3; /* Borda de atenção */
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .credentials-box pre {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background-color: #ddd;
+            margin: 30px 0;
+        }
+        
+        .footer-update {
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            color: #777;
+            font-size: 0.9em;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1><%= documentacao.tituloDocumento || 'Título Não Definido' %></h1>
+    
+    <h2 id="index">Índice</h2>
+    
+    <ol>
+        <% const secoes = documentacao.secoes || []; %>
+        
+        <% if (secoes.length > 0) { %>
+            <% secoes.forEach((s, i) => { %>
+                <li><a href="#section-<%= i %>"><%= i + 1 %> - <%= s.tituloSecao %></a></li>
+            <% }); %>
+        <% } else { %>
+            <li>Nenhuma seção definida para este documento.</li>
+        <% } %>
+    </ol>
+    <hr>
+    
+    <% if (secoes.length > 0) { %>
+        <% secoes.forEach((s, i) => { %>
+            
+            <h2 id="section-<%= i %>"><%= i + 1 %> - <%= s.tituloSecao %></h2>
+            <% if (s.subtituloSecao) { %>
+                <h3><%= s.subtituloSecao %></h3>
+            <% } %>
+
+            <% 
+                const conteudo = s.conteudo || {}; 
+                const detalhes = conteudo.detalhes || []; 
+            %>
+            
+            <% switch (s.tipoConteudo) {
+                case 'imagem': %>
+                    <img src="<%= conteudo.urlImagem || '' %>" alt="<%= conteudo.altImagem || s.tituloSecao %>" />
+                <% break;
+                
+                case 'credenciais': %>
+                    <div class="credentials-box">
+                        <% if (conteudo.textoBruto) { %>
+                             <pre><%= conteudo.textoBruto %></pre>
+                        <% } else if (detalhes.length > 0) { %>
+                            <pre>
+                                <% detalhes.forEach(d => { %>
+                                    <%= d.rotulo || '' %>: <%= d.valor || '' %>
+                                <% }); %>
+                            </pre>
+                        <% } else { %>
+                            <p>Credenciais não informadas.</p>
+                        <% } %>
+                    </div>
+                <% break;
+                
+                case 'infoGeral': %>
+                    <ul>
+                        <% detalhes.forEach(d => { %>
+                            <li><strong><%= d.rotulo || '' %></strong>: <%= d.valor || '' %></li>
+                        <% }); %>
+                    </ul>
+                    <% if (conteudo.textoBruto) { %>
+                        <p><%= conteudo.textoBruto %></p>
+                    <% } %>
+                <% break;
+                
+                case 'mapaRede':
+                case 'blocoCodigo': %>
+                    <h4><%= s.tipoConteudo === 'mapaRede' ? 'Mapa de Rede' : 'Bloco de Código/Texto Bruto' %></h4>
+                    <pre><code><%= conteudo.textoBruto || 'Nenhum conteúdo fornecido.' %></code></pre>
+                <% break;
+            } %>
+            
+            <% if (i < secoes.length - 1) { %>
+                <hr />
+            <% } %>
+        <% }); %>
+    <% } %>
+
+    <div class="footer-update">
+        <strong>Última Atualização</strong>: <%= new Date(documentacao.ultimaAtualizacao).toLocaleString('pt-BR') %>
+    </div>
+
+</div>
+
+</body>
+</html>

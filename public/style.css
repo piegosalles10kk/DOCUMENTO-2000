@@ -1,0 +1,185 @@
+/* ==========================================================
+   ESTILOS GLOBAIS
+   ========================================================== */
+body {
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    line-height: 1.6;
+    color: #333;
+    /* Adicionando um fundo levemente cinza ao corpo fora do container principal */
+    background-color: #f4f4f9; 
+}
+
+/* Título principal do Gerenciador */
+h1 {
+    font-weight: 700;
+    color: #007bff;
+}
+
+/* ==========================================================
+   ESTILOS DA INTERFACE CRUD (Bootstrap overrides)
+   ========================================================== */
+
+/* Ajuste para o formulário de edição modular */
+#document-form-container {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Estilo para cada item de seção no formulário (melhora a visualização do drag-and-drop) */
+.section-item { 
+    /* Manter a borda e padding para demarcar o bloco */
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 4px;
+    background-color: #fcfcfc;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Cursor para o manipulador de arrastar */
+.drag-handle { 
+    cursor: grab; 
+    font-size: 1.25rem;
+    padding: 0 8px;
+    color: #888;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Estilo para a linha de detalhe (Rótulo: Valor) */
+.detail-row input {
+    font-size: 0.9rem;
+}
+
+/* JSON Aninhado no Formulário */
+.section-nested-json {
+    font-size: 0.85em;
+    font-family: 'Consolas', 'Courier New', monospace;
+    background-color: #f3f4f6;
+}
+
+/* ==========================================================
+   ESTILOS DE RENDERIZAÇÃO DO DOCUMENTO (Visualização)
+   ========================================================== */
+
+/* O ID doc-content é onde o JS injeta o HTML. O document-render é o pai dele. */
+#document-render {
+    background-color: #ffffff;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+
+/* Títulos do Documento Renderizado */
+#doc-content h1 {
+    color: #1a1a1a;
+    border-bottom: 4px solid #343a40; 
+    padding-bottom: 10px;
+    margin-top: 0;
+    font-size: 2.2em;
+    font-weight: 700;
+}
+
+#doc-content h2 { /* Nível 1 de Seção */
+    color: #343a40;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
+    margin-top: 35px;
+    font-size: 1.8em;
+    font-weight: 600;
+}
+
+#doc-content h3 { /* Nível 2 de Seção */
+    color: #007bff; 
+    margin-top: 25px;
+    margin-bottom: 10px;
+    font-size: 1.5em;
+    font-weight: 500;
+}
+
+#doc-content h4, #doc-content h5, #doc-content h6 { /* Níveis 3+ */
+    color: #555; 
+    margin-top: 15px;
+    margin-bottom: 8px;
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+/* Listas (infoGeral) */
+#doc-content ul { 
+    list-style: none; 
+    padding-left: 0; 
+    margin-top: 10px;
+}
+#doc-content ul li {
+    margin-bottom: 5px;
+}
+#doc-content ul li::before { 
+    content: "•"; 
+    color: #17a2b8; 
+    font-weight: bold; 
+    display: inline-block; 
+    width: 1em; 
+    margin-left: -1em; 
+}
+
+/* Imagens */
+#doc-content img { 
+    max-width: 100%; 
+    height: auto; 
+    display: block; 
+    margin: 25px auto; /* Centraliza a imagem */
+    border: 1px solid #e9ecef; 
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Bloco de Código e Mapa de Rede */
+.code-block {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.95em;
+    background-color: #272822; /* Fundo escuro */
+    color: #f8f8f2; /* Texto claro */
+    border: 1px solid #333;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 15px 0;
+    overflow-x: auto; 
+}
+
+.code-block pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Caixa de Credenciais (Destaque) */
+/* CLASSE USADA NO SCRIPT.JS: .credenciais-box */
+.credenciais-box {
+    background-color: #fff3cd; /* Amarelo muito claro (Bootstrap .alert-warning) */
+    border: 1px solid #ffeeba; 
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 6px;
+    color: #856404; /* Texto escuro para contraste */
+}
+.credenciais-box pre { 
+    background-color: #ffffff; 
+    border: 1px solid #f9e993; 
+    padding: 10px;
+    margin-top: 10px;
+    color: #333; /* Força o texto dentro do pre a ser escuro */
+}
+
+/* Rodapé de Atualização */
+.update-info { /* CLASSE USADA NO SCRIPT.JS */
+    margin-top: 50px;
+    padding-top: 15px;
+    border-top: 1px solid #dee2e6;
+    color: #6c757d; 
+    font-size: 0.85em;
+    text-align: right;
+}
