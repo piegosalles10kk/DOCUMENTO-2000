@@ -1,486 +1,228 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documentação 2000</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --primary: #0d6efd;
-            --secondary: #6c757d;
-            --success: #198754;
-            --danger: #dc3545;
-            --dark: #212529;
-            --light: #f8f9fa;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px 0;
-        }
-
-        .main-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, var(--primary), #0a58ca);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 20px;
-        }
-
-        .btn-action {
-            margin: 0 5px;
-            transition: all 0.3s;
-        }
-
-        .btn-action:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: rgba(13, 110, 253, 0.05);
-            cursor: pointer;
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, var(--primary), #0a58ca);
-            color: white;
-        }
-
-        .form-label {
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-        }
-
-        .doc-preview {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .spinner-border {
-            width: 3rem;
-            height: 3rem;
-        }
-
-        .badge-custom {
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.85em;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--secondary);
-        }
-
-        .empty-state i {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.3;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
 
-<div class="main-container">
-    <!-- Header -->
-    <div class="text-center text-white mb-4">
-        <h1 class="display-4 fw-bold"><i class="bi bi-file-earmark-text"></i> DOCUMENTO 2000</h1>
-        <p class="lead">Sistema de Documentação Técnica</p>
-    </div>
-
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
-
-    <!-- Main Card -->
-    <div class="card">
-        <div class="card-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h3 class="mb-0"><i class="bi bi-folder2-open"></i> Documentos</h3>
-                <button class="btn btn-light btn-action" onclick="openCreateModal()">
-                    <i class="bi bi-plus-circle"></i> Novo Documento
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div id="docs-list">
-                <div class="loading">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Carregando...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Criar/Editar -->
-<div class="modal fade" id="docModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">
-                    <i class="bi bi-file-earmark-plus"></i> Novo Documento
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="docForm">
-                    <input type="hidden" id="editMode">
-                    <input type="hidden" id="originalIdentifier">
+    <div class="container-fluid py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+                <div class="card shadow-lg border-0">
                     
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="tituloDocumento" class="form-label">
-                                <i class="bi bi-card-heading"></i> Título do Documento
-                            </label>
-                            <input type="text" class="form-control" id="tituloDocumento" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="identificador" class="form-label">
-                                <i class="bi bi-tag"></i> Identificador (Único)
-                            </label>
-                            <input type="text" class="form-control" id="identificador" required 
-                                   placeholder="Ex: RACK001-FISICO">
-                        </div>
+                    <div class="card-header bg-primary text-white p-4 rounded-top">
+                        <h1 class="h3 font-weight-bold">📚 Sistema de Documentação 2000</h1>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="documentJson" class="form-label">
-                            <i class="bi bi-code-square"></i> Conteúdo (JSON)
-                        </label>
-                        <textarea class="form-control font-monospace" id="documentJson" rows="15" 
-                                  placeholder='Cole ou edite o JSON das seções aqui...'></textarea>
-                        <div class="form-text">
-                            Cole o JSON completo do array de seções. 
-                            <a href="#" onclick="showJsonExample(); return false;">Ver exemplo</a>
+                    <div class="card-body p-0">
+                        <ul class="nav nav-tabs px-4 border-bottom-0" id="mainTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="list-tab" data-bs-toggle="tab" data-bs-target="#list-pane" type="button" role="tab" aria-controls="list-pane" aria-selected="true">
+                                    📋 Lista de Documentos
+                                </button>
+                            </li>
+                            <li class="nav-item d-none" role="presentation" id="edit-tab-item">
+                                <button class="nav-link" id="edit-tab" data-bs-toggle="tab" data-bs-target="#edit-pane" type="button" role="tab" aria-controls="edit-pane" aria-selected="false">
+                                    <span id="edit-tab-title">✏️ Editar Documento</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="tab-content p-4">
+                        
+                        <div class="tab-pane fade show active" id="list-pane" role="tabpanel" aria-labelledby="list-tab" tabindex="0">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h2 class="h4 font-weight-bold text-gray-800">Documentos Cadastrados</h2>
+                                <button id="btn-new-document" class="btn btn-primary">
+                                    <i class="fas fa-plus"></i> Novo Documento
+                                </button>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="search-input" placeholder="Pesquisar por Título ou Identificador...">
+                                    <button class="btn btn-outline-secondary" type="button" id="clear-search-btn" style="display: none;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="loading-message" class="text-center my-5 d-none">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Carregando documentos...</p>
+                            </div>
+
+                            <div id="empty-list-message" class="text-center py-5 bg-light rounded-lg border border-dashed border-2 border-gray-300 d-none">
+                                <p class="h5 mb-4 text-muted">📭 Nenhum documento cadastrado</p>
+                                <button id="btn-create-first" class="btn btn-primary btn-lg">
+                                    Criar Primeiro Documento
+                                </button>
+                            </div>
+
+                            <div class="row g-3" id="document-list-container">
+                                </div>
+                        </div>
+
+                        <div class="tab-pane fade" id="edit-pane" role="tabpanel" aria-labelledby="edit-tab" tabindex="0">
+                            
+                            <div class="bg-light border border-secondary-subtle rounded-3 p-4 mb-4">
+                                <h2 class="h5 mb-3 text-primary"><i class="fas fa-info-circle me-2"></i> Detalhes Principais</h2>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="tituloDocumento" class="form-label text-sm">Título do Documento *</label>
+                                        <input type="text" class="form-control form-control-sm" id="tituloDocumento" placeholder="Ex: Documentação RACK001 - Físico">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="identificador" class="form-label text-sm">Identificador (Único) *</label>
+                                        <input type="text" class="form-control form-control-sm font-monospace" id="identificador" placeholder="Ex: RACK001-FISICO">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h3 class="h5 font-weight-bold text-gray-800"><i class="fas fa-cubes me-1"></i> Seções e Conteúdo Modular</h3>
+                                    <button id="btn-add-section" class="btn btn-success">
+                                        <i class="fas fa-plus"></i> Adicionar Nova Seção
+                                    </button>
+                                </div>
+
+                                <div id="empty-sections-message" class="text-center py-5 bg-light rounded-3 border border-dashed border-2 border-gray-300 d-none">
+                                    <p class="text-muted mb-4">Nenhuma seção adicionada ainda.</p>
+                                    <button id="btn-add-section-empty" class="btn btn-success">
+                                        Adicionar Primeira Seção
+                                    </button>
+                                </div>
+
+                                <div id="sections-editor-list">
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                <button id="btn-cancel-edit" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </button>
+                                <button id="btn-save-document" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Salvar Documento
+                                </button>
+                            </div>
+
                         </div>
                     </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-circle"></i> Cancelar
-                </button>
-                <button type="button" class="btn btn-primary" onclick="saveDocument()">
-                    <i class="bi bi-save"></i> Salvar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Visualizar -->
-<div class="modal fade" id="viewModal" tabindex="-1">
-    <div class="modal-dialog modal-fullscreen">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-eye"></i> Visualização do Documento
-                </h5>
-                <div>
-                    <button class="btn btn-light btn-sm me-2" onclick="printDocument()">
-                        <i class="bi bi-printer"></i> Imprimir/PDF
-                    </button>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
             </div>
-            <div class="modal-body p-0">
-                <iframe id="docFrame" style="width:100%; height:100vh; border:none;"></iframe>
+        </div>
+    </div>
+
+    <div class="modal fade" id="blockEditorModal" tabindex="-1" aria-labelledby="blockEditorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="blockEditorModalLabel">⚙️ Editar Bloco de Conteúdo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="block-form">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="block-tipoBloco" class="form-label">Tipo de Conteúdo *</label>
+                                <select class="form-select" id="block-tipoBloco" required>
+                                    <option value="" disabled selected>Selecione o tipo...</option>
+                                    <option value="textoBruto">Texto Simples</option>
+                                    <option value="detalhes">Detalhes (Rótulo: Valor)</option>
+                                    <option value="credenciais">Credenciais de Acesso</option>
+                                    <option value="blocoCodigo">Bloco de Código/Configuração</option>
+                                    <option value="imagem">Imagem/Diagrama</option>
+                                    <option value="mapaRede">Mapa de Rede (Texto)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="block-tituloBloco" class="form-label">Título do Bloco (Opcional)</label>
+                                <input type="text" class="form-control" id="block-tituloBloco" placeholder="Ex: Acesso Administrativo SSH">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="block-descricaoBloco" class="form-label">Descrição do Bloco (Opcional)</label>
+                            <textarea class="form-control" id="block-descricaoBloco" rows="2" placeholder="Informação adicional ou contexto sobre o conteúdo abaixo."></textarea>
+                        </div>
+
+                        <hr>
+
+                        <div id="content-valorBruto" class="content-specific-field mb-3 d-none">
+                            <label for="block-valorBruto" class="form-label" id="label-valorBruto">Conteúdo Principal (Texto, Código ou Credenciais) *</label>
+                            <textarea class="form-control font-monospace" id="block-valorBruto" rows="8" placeholder="Insira o texto, código ou credenciais..."></textarea>
+                        </div>
+
+                        <div id="content-detalhes" class="content-specific-field mb-3 d-none">
+                            <label class="form-label">Detalhes (Pares Rótulo: Valor) *</label>
+                            <div id="detalhes-list" class="bg-light p-3 rounded mb-2">
+                                <p class="text-center text-muted m-0" id="empty-detalhes-message">Nenhum detalhe adicionado.</p>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-success" id="btn-add-detalhe">
+                                <i class="fas fa-plus"></i> Adicionar Detalhe
+                            </button>
+                        </div>
+
+                        <div id="content-imagem" class="content-specific-field mb-3 d-none">
+                            <label for="block-urlImagem" class="form-label">URL da Imagem/Diagrama *</label>
+                            <input type="url" class="form-control" id="block-urlImagem" placeholder="Ex: https://seusite.com/diagrama.png">
+                            <label for="block-altImagem" class="form-label mt-2">Descrição da Imagem (Legenda)</label>
+                            <input type="text" class="form-control" id="block-altImagem" placeholder="Ex: Diagrama de rede da sala de servidores">
+                            </div>
+                        
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="button" class="btn btn-info" id="btn-save-block">
+                        <i class="fas fa-check"></i> Salvar Bloco
+                    </button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-const API_URL = '/api/docs';
-let currentDocs = [];
-
-// Inicialização
-document.addEventListener('DOMContentLoaded', () => {
-    loadDocuments();
-});
-
-// Carregar documentos
-async function loadDocuments() {
-    try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        
-        if (data.sucesso) {
-            currentDocs = data.dados;
-            renderDocuments(currentDocs);
-        } else {
-            showToast('Erro ao carregar documentos', 'danger');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showToast('Erro de conexão', 'danger');
-    }
-}
-
-// Renderizar lista
-function renderDocuments(docs) {
-    const container = document.getElementById('docs-list');
+    <div class="modal fade" id="sectionEditorModal" tabindex="-1" aria-labelledby="sectionEditorModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sectionEditorModalLabel">✏️ Editar Seção</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="section-form">
+                        <div class="mb-3">
+                            <label for="section-tituloSecao" class="form-label">Título da Seção *</label>
+                            <input type="text" class="form-control" id="section-tituloSecao" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="section-subtituloSecao" class="form-label">Subtítulo (Opcional)</label>
+                            <input type="text" class="form-control" id="section-subtituloSecao">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btn-save-section">Salvar Seção</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
-    if (docs.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <h4>Nenhum documento encontrado</h4>
-                <p>Comece criando seu primeiro documento técnico</p>
-                <button class="btn btn-primary mt-3" onclick="openCreateModal()">
-                    <i class="bi bi-plus-circle"></i> Criar Documento
-                </button>
-            </div>`;
-        return;
-    }
-
-    let html = `
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Identificador</th>
-                        <th>Título</th>
-                        <th>Última Atualização</th>
-                        <th class="text-end">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-    
-    docs.forEach(doc => {
-        const date = new Date(doc.ultimaAtualizacao).toLocaleString('pt-BR');
-        html += `
-            <tr>
-                <td><span class="badge bg-primary badge-custom">${doc.identificador}</span></td>
-                <td><strong>${doc.tituloDocumento}</strong></td>
-                <td><small class="text-muted"><i class="bi bi-clock"></i> ${date}</small></td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-info btn-action" onclick="viewDocument('${doc.identificador}')">
-                        <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-warning btn-action" onclick="editDocument('${doc.identificador}')">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger btn-action" onclick="deleteDocument('${doc.identificador}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>`;
-    });
-    
-    html += `</tbody></table></div>`;
-    container.innerHTML = html;
-}
-
-// Abrir modal criar
-function openCreateModal() {
-    document.getElementById('editMode').value = '';
-    document.getElementById('docForm').reset();
-    document.getElementById('modalTitle').innerHTML = '<i class="bi bi-file-earmark-plus"></i> Novo Documento';
-    document.getElementById('documentJson').value = JSON.stringify([
-        {
-            "tituloSecao": "Visão Geral",
-            "tipoConteudo": "infoGeral",
-            "conteudo": {
-                "textoBruto": "Descrição geral do sistema",
-                "detalhes": [
-                    {"rotulo": "Servidor", "valor": "Dell PowerEdge R420"},
-                    {"rotulo": "IP", "valor": "192.168.10.201"}
-                ]
-            }
-        }
-    ], null, 2);
-    new bootstrap.Modal(document.getElementById('docModal')).show();
-}
-
-// Editar documento
-async function editDocument(identifier) {
-    try {
-        const response = await fetch(`${API_URL}/id/${identifier}`);
-        const data = await response.json();
-        
-        if (data.sucesso) {
-            const doc = data.dados;
-            document.getElementById('editMode').value = 'edit';
-            document.getElementById('originalIdentifier').value = identifier;
-            document.getElementById('tituloDocumento').value = doc.tituloDocumento;
-            document.getElementById('identificador').value = doc.identificador;
-            document.getElementById('documentJson').value = JSON.stringify(doc.secoes || [], null, 2);
-            document.getElementById('modalTitle').innerHTML = '<i class="bi bi-pencil"></i> Editar Documento';
-            new bootstrap.Modal(document.getElementById('docModal')).show();
-        }
-    } catch (error) {
-        showToast('Erro ao carregar documento', 'danger');
-    }
-}
-
-// Salvar documento
-async function saveDocument() {
-    const editMode = document.getElementById('editMode').value;
-    const originalIdentifier = document.getElementById('originalIdentifier').value;
-    const titulo = document.getElementById('tituloDocumento').value;
-    const identificador = document.getElementById('identificador').value;
-    const jsonText = document.getElementById('documentJson').value;
-
-    if (!titulo || !identificador) {
-        showToast('Preencha todos os campos obrigatórios', 'warning');
-        return;
-    }
-
-    let secoes = [];
-    try {
-        secoes = JSON.parse(jsonText);
-    } catch (e) {
-        showToast('JSON inválido. Verifique a sintaxe.', 'danger');
-        return;
-    }
-
-    const docData = {
-        tituloDocumento: titulo,
-        identificador: identificador,
-        secoes: secoes
-    };
-
-    try {
-        let response;
-        if (editMode === 'edit') {
-            response = await fetch(`${API_URL}/${originalIdentifier}`, {
-                method: 'PUT',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(docData)
-            });
-        } else {
-            response = await fetch(API_URL, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(docData)
-            });
-        }
-
-        const data = await response.json();
-        
-        if (data.sucesso) {
-            showToast(editMode === 'edit' ? 'Documento atualizado!' : 'Documento criado!', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('docModal')).hide();
-            loadDocuments();
-        } else {
-            showToast(data.mensagem || 'Erro ao salvar', 'danger');
-        }
-    } catch (error) {
-        showToast('Erro de conexão', 'danger');
-    }
-}
-
-// Visualizar documento
-function viewDocument(identifier) {
-    const frame = document.getElementById('docFrame');
-    frame.src = `/render/${identifier}`;
-    new bootstrap.Modal(document.getElementById('viewModal')).show();
-}
-
-// Deletar documento
-async function deleteDocument(identifier) {
-    if (!confirm(`Deseja realmente excluir o documento ${identifier}?`)) return;
-
-    try {
-        const response = await fetch(`${API_URL}/${identifier}`, {
-            method: 'DELETE'
-        });
-
-        const data = await response.json();
-        
-        if (data.sucesso) {
-            showToast('Documento excluído!', 'success');
-            loadDocuments();
-        } else {
-            showToast(data.mensagem || 'Erro ao excluir', 'danger');
-        }
-    } catch (error) {
-        showToast('Erro de conexão', 'danger');
-    }
-}
-
-// Imprimir/PDF
-function printDocument() {
-    document.getElementById('docFrame').contentWindow.print();
-}
-
-// Mostrar exemplo JSON
-function showJsonExample() {
-    const exemplo = [
-        {
-            "tituloSecao": "Firewall pfSense",
-            "subtituloSecao": "Configurações de Rede",
-            "tipoConteudo": "infoGeral",
-            "conteudo": {
-                "textoBruto": "Firewall principal da rede",
-                "detalhes": [
-                    {"rotulo": "IP", "valor": "192.168.10.1"},
-                    {"rotulo": "MAC", "valor": "78:9A:18:30:20:3D"}
-                ]
-            }
-        },
-        {
-            "tituloSecao": "Credenciais de Acesso",
-            "tipoConteudo": "credenciais",
-            "conteudo": {
-                "textoBruto": "Login: admin\\nSenha: ,~~taE3J\\\\UVwD2nX)w"
-            }
-        }
-    ];
-    
-    document.getElementById('documentJson').value = JSON.stringify(exemplo, null, 2);
-    showToast('Exemplo carregado!', 'info');
-}
-
-// Toast notification
-function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-    toast.className = `alert alert-${type} alert-dismissible fade show`;
-    toast.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.getElementById('toast-container').appendChild(toast);
-    
-    setTimeout(() => {
-        toast.remove();
-    }, 5000);
-}
-</script>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

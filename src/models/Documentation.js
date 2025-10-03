@@ -1,57 +1,72 @@
 const mongoose = require('mongoose');
 
-// --- 1. Sub-Schema: Detalhes de Conteúdo (para listas, credenciais, etc.) ---
-// Estes campos SÃO obrigatórios, mas só se o array 'detalhes' for fornecido.
+// --- 1. Sub-Schema: Detalhes de Conteúdo (DetalheSchema) ---
+// Usado para pares Rótulo:Valor dentro de um bloco.
 const DetalheSchema = new mongoose.Schema({
-    rotulo: { type: String, required: true }, // Ex: "Endereço IP"
-    valor: { type: String, required: true },  // Ex: "192.168.10.1"
-});
+    rotulo: { type: String, required: true },
+    valor: { type: String, required: true },
+}, { _id: false });
 
-// Definindo o SecaoSchema para permitir recursão
-// Usar uma referência direta permite que o schema seja definido abaixo
-const SecaoSchema = new mongoose.Schema();
-
-// --- 2. Sub-Schema: Seção Modular (RECURSIVA) ---
-SecaoSchema.add({
-    // Propriedades Básicas
-    tituloSecao: { type: String, required: true }, // OBRIGATÓRIO: Ex: "Firewall pfSense"
-    subtituloSecao: { type: String },            // Opcional
+// --- NOVO SUB-SCHEMA: BlocoConteudoSchema ---
+// Este schema define um único componente de conteúdo que pode ser adicionado
+// várias vezes dentro de uma Seção.
+const BlocoConteudoSchema = new mongoose.Schema({
+    
+    // =======================================================
+    // NOVOS CAMPOS PARA O SUBTÍTULO/DESCRIÇÃO DO CONTEÚDO
+    // =======================================================
+    tituloBloco: { type: String },    // Título opcional para o bloco (ex: "Configuração SSH")
+    descricaoBloco: { type: String }, // Descrição opcional (ex: "Use este código para...")
+    // =======================================================
 
     // Tipo de Conteúdo (Instrui como o Front-end deve renderizar/editar)
-    tipoConteudo: {
+    tipoBloco: { 
         type: String,
-        enum: ['infoGeral', 'credenciais', 'listaDetalhada', 'blocoCodigo', 'imagem', 'mapaRede'],
+        enum: ['textoBruto', 'detalhes', 'credenciais', 'blocoCodigo', 'imagem', 'mapaRede'],
         required: true // OBRIGATÓRIO
     },
 
-    // Objeto de Conteúdo Variável (Não é requerido, mas se fornecido, seus campos são validados)
-    conteudo: {
-        // Usado para 'credenciais' e 'infoGeral'. É um array opcional.
-        detalhes: {
-            type: [DetalheSchema],
-            // AQUI ESTÁ A CHAVE: Se 'detalhes' for fornecido, deve ser um array. 
-            // Se não for fornecido, não será validado, resolvendo o problema.
-            required: false 
-        }, 
-        
-        // Usado para 'listaDetalhada' e 'blocoCodigo'. É um campo opcional.
-        textoBruto: { type: String },
-        
-        // Usado para 'imagem'
-        urlImagem: { type: String },
-        altImagem: { type: String }
+    // Campos de Conteúdo
+    valorBruto: { type: String }, // Usado para texto geral, credenciais, código, mapa de rede (o conteúdo em si)
+    
+    // Usado APENAS para o tipo 'detalhes'
+    detalhes: {
+        type: [DetalheSchema],
+        required: false 
+    }, 
+    
+    // Usado APENAS para o tipo 'imagem'
+    urlImagem: { type: String },
+    altImagem: { type: String }
+
+}, { _id: false });
+
+
+// --- 3. Sub-Schema: Seção Modular (RECURSIVA) ---
+const SecaoSchema = new mongoose.Schema(); // Definido para recursividade
+
+SecaoSchema.add({
+    // Propriedades Básicas (Metadados da Seção)
+    tituloSecao: { type: String, required: true }, // OBRIGATÓRIO
+    subtituloSecao: { type: String },            // Opcional
+
+    // NOVO ARRAY DE BLOCOS: Permite múltiplos tipos de conteúdo!
+    blocos: {
+        type: [BlocoConteudoSchema],
+        required: true, // Uma seção deve ter pelo menos um bloco
+        default: []
     },
 
     // CAMPO RECURSIVO: Opcional
     secoesAninhadas: [SecaoSchema] 
 });
 
-// Configurações e opções do SecaoSchema (importante para subdocumentos)
+// Configurações do SecaoSchema
 SecaoSchema.set('toObject', { virtuals: true });
 SecaoSchema.set('toJSON', { virtuals: true });
-SecaoSchema.set('_id', false); // Para evitar IDs automáticos em subdocumentos, se preferir
+SecaoSchema.set('_id', false); 
 
-// --- 3. Schema Principal: Documentação ---
+// --- 4. Schema Principal: Documentação ---
 const DocumentacaoSchema = new mongoose.Schema({
     // Metadados
     tituloDocumento: { 
@@ -63,15 +78,14 @@ const DocumentacaoSchema = new mongoose.Schema({
         type: String, 
         required: true, 
         unique: true 
-    }, // OBRIGATÓRIO: Ex: "RACK001"
-    
+    }, 
     ultimaAtualizacao: { 
         type: Date, 
         default: Date.now 
     },
     
-    // Array de Seções Modulares (O Mongoose fará a validação em cascata)
+    // Array de Seções Modulares
     secoes: [SecaoSchema]
-}, { timestamps: true }); // Adiciona createdAt e updatedAt
+}, { timestamps: true }); 
 
 module.exports = mongoose.model('Documentacao', DocumentacaoSchema);

@@ -1,634 +1,874 @@
-// VARIÁVEIS GLOBAIS
-const API_BASE_URL = '/api/docs'; 
-let currentDocIdentifier = null; // O identificador do documento sendo editado (Ex: RACK001)
+const API_URL = '/api/docs';
 
 // ==========================================================
-// 1. FUNÇÕES DE INICIALIZAÇÃO
+// ESTADO GLOBAL DA APLICAÇÃO
+// ==========================================================
+let documents = [];
+let currentDoc = null; // Identificador do documento que está sendo editado (string)
+let isEditing = false;
+let activeTab = 'list';
+let formData = {
+    tituloDocumento: '',
+    identificador: '',
+    secoes: [] 
+};
+
+// Variáveis para rastrear o bloco ou seção sendo editado(a) nos Modals
+let currentSectionIndex = -1;
+let currentBlockIndex = -1;
+
+// Instâncias dos Modals
+let blockModal;
+let sectionModal;
+
+
+// Mapeamento dos tipos de bloco para ícones e títulos no dropdown
+const BLOCK_TYPES = {
+    textoBruto: { label: '📝 Texto Simples / Descrição', icon: 'fas fa-align-left' },
+    detalhes: { label: '📋 Detalhes (Rótulo/Valor)', icon: 'fas fa-list' },
+    credenciais: { label: '🔐 Credenciais de Acesso', icon: 'fas fa-lock' },
+    blocoCodigo: { label: '💻 Código/Comandos', icon: 'fas fa-code' },
+    imagem: { label: '🖼️ Imagem (URL)', icon: 'fas fa-image' },
+    mapaRede: { label: '🗺️ Diagrama/Mapa de Rede', icon: 'fas fa-sitemap' }
+};
+
+// ==========================================================
+// FUNÇÕES DE UTILIDADE E RENDERIZAÇÃO GERAL
+// ==========================================================
+
+/**
+ * Atualiza o estado global e o campo do formulário de edição principal.
+ */
+const updateFormData = (field, value) => {
+    formData[field] = value;
+    const element = document.getElementById(field);
+    if (element) {
+        element.value = value;
+    }
+};
+
+/**
+ * Alterna entre as abas e atualiza o estado de edição.
+ */
+const switchTab = (tabName) => {
+    activeTab = tabName;
+    const listTabElement = document.getElementById('list-tab');
+    const editTabElement = document.getElementById('edit-tab');
+    const editTabItemElement = document.getElementById('edit-tab-item');
+
+    // 1. Mostrar/Esconder a aba "Editar" e muda seu título
+    if (isEditing) {
+        editTabItemElement.classList.remove('d-none');
+        document.getElementById('edit-tab-title').textContent = currentDoc ? '✏️ Editar Documento' : '➕ Novo Documento';
+    } else {
+        editTabItemElement.classList.add('d-none');
+    }
+
+    // 2. Mudar a aba ativa usando a API do Bootstrap
+    if (tabName === 'edit' && isEditing && editTabElement) {
+        const bsEditTab = new bootstrap.Tab(editTabElement);
+        bsEditTab.show();
+    } else if (listTabElement) {
+        const bsListTab = new bootstrap.Tab(listTabElement);
+        bsListTab.show();
+        // Quando volta para a lista, limpa a pesquisa e re-renderiza a lista completa
+        document.getElementById('search-input').value = '';
+        document.getElementById('clear-search-btn').style.display = 'none';
+        renderDocumentList();
+    }
+};
+
+
+// --- FUNÇÕES DE CARREGAMENTO E MANIPULAÇÃO DE DADOS ---
+
+/**
+ * Carrega a lista de documentos da API. (MANTIDA)
+ */
+const fetchDocuments = async () => {
+    const listContainer = document.getElementById('document-list-container');
+    const loadingMessage = document.getElementById('loading-message');
+    const emptyMessage = document.getElementById('empty-list-message');
+
+    listContainer.innerHTML = ''; // Limpa a lista
+    loadingMessage.classList.remove('d-none');
+    emptyMessage.classList.add('d-none');
+
+    try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        if (data.sucesso) {
+            documents = data.dados;
+            // A renderização inicial será com a lista completa
+            renderDocumentList(documents); 
+        }
+    } catch (error) {
+        console.error('Erro ao carregar documentos:', error);
+    } finally {
+        loadingMessage.classList.add('d-none');
+        // A lógica de lista vazia foi transferida para renderDocumentList
+    }
+};
+
+// ==========================================================
+// FUNÇÃO CENTRAL DA PESQUISA (NOVA)
+// ==========================================================
+
+/**
+ * Filtra a lista de documentos com base no texto de pesquisa.
+ */
+const filterDocumentList = (searchText) => {
+    const term = searchText.toLowerCase().trim();
+    
+    // Se o termo estiver vazio, renderiza a lista completa
+    if (!term) {
+        renderDocumentList(documents);
+        document.getElementById('clear-search-btn').style.display = 'none';
+        return;
+    }
+
+    // Mostra o botão de limpar
+    document.getElementById('clear-search-btn').style.display = 'block';
+
+    // Filtra os documentos
+    const filteredDocs = documents.filter(doc => {
+        const titleMatch = doc.tituloDocumento.toLowerCase().includes(term);
+        const idMatch = doc.identificador.toLowerCase().includes(term);
+        // Opcional: Adicionar busca por conteúdo da seção/bloco se a estrutura for grande
+        // const contentMatch = JSON.stringify(doc.secoes).toLowerCase().includes(term); 
+        return titleMatch || idMatch; // || contentMatch
+    });
+
+    renderDocumentList(filteredDocs);
+};
+
+// ==========================================================
+// RENDERIZAÇÃO DA LISTA DE DOCUMENTOS (MODIFICADA)
+// ==========================================================
+
+/**
+ * Renderiza a lista de documentos. Agora aceita uma lista para ser renderizada (filtrada ou completa).
+ * @param {Array} listToRender - A lista de documentos a ser exibida.
+ */
+const renderDocumentList = (listToRender = documents) => {
+    const listContainer = document.getElementById('document-list-container');
+    const emptyMessage = document.getElementById('empty-list-message');
+    listContainer.innerHTML = ''; // Limpa a lista
+    
+    const isFiltered = listToRender.length !== documents.length || document.getElementById('search-input').value.trim() !== '';
+
+    if (listToRender.length === 0) {
+        if (!isFiltered) {
+            // Lista completa está vazia
+            emptyMessage.classList.remove('d-none');
+        } else {
+            // Lista filtrada está vazia, mostra mensagem de "Nenhum resultado"
+            emptyMessage.classList.remove('d-none');
+            // Altera o conteúdo da mensagem de lista vazia para pesquisa
+            emptyMessage.innerHTML = `
+                <p class="h5 mb-4 text-muted">🔎 Nenhum resultado encontrado para a pesquisa.</p>
+                <button id="btn-create-first" class="btn btn-primary btn-lg d-none">
+                    Criar Primeiro Documento
+                </button>
+            `;
+            // Re-anexa o listener ao botão (apesar de estar escondido, a prática é boa)
+            document.getElementById('btn-create-first').onclick = handleNewDocument;
+        }
+        listContainer.classList.add('d-none');
+        return;
+    }
+    
+    // Se há itens, remove a mensagem de lista vazia
+    emptyMessage.classList.add('d-none');
+    
+    // Restaura a mensagem original da lista vazia se for removida
+    emptyMessage.innerHTML = `
+        <p class="h5 mb-4 text-muted">📭 Nenhum documento cadastrado</p>
+        <button id="btn-create-first" class="btn btn-primary btn-lg">
+            Criar Primeiro Documento
+        </button>
+    `;
+    document.getElementById('btn-create-first').onclick = handleNewDocument;
+    
+    listContainer.classList.remove('d-none');
+
+    let listHtml = '';
+    listToRender.forEach(doc => {
+        const lastUpdated = new Date(doc.ultimaAtualizacao || Date.now()).toLocaleString('pt-BR');
+        listHtml += `
+            <div class="col-12">
+                <div class="card shadow-sm border-0 document-item" data-title="${doc.tituloDocumento}" data-id="${doc.identificador}">
+                    <div class="card-body d-flex justify-content-between align-items-center p-3">
+                        <div>
+                            <h5 class="card-title mb-1">${doc.tituloDocumento}</h5>
+                            <p class="card-subtitle text-muted mb-0">ID: ${doc.identificador}</p>
+                            <small class="text-secondary">Última atualização: ${lastUpdated}</small>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <a href="/render/${doc.identificador}" target="_blank" class="btn btn-info btn-sm" title="Visualizar">
+                                <i class="fas fa-file-text"></i>
+                            </a>
+                            <button class="btn btn-warning btn-sm btn-edit-doc" data-id="${doc.identificador}" title="Editar">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm btn-delete-doc" data-id="${doc.identificador}" title="Excluir">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    listContainer.innerHTML = listHtml;
+    
+    // Anexar Listeners para botões da lista (Editar e Excluir)
+    document.querySelectorAll('.btn-edit-doc').forEach(button => {
+        button.onclick = () => handleEditDocument(button.dataset.id);
+    });
+    document.querySelectorAll('.btn-delete-doc').forEach(button => {
+        button.onclick = () => handleDeleteDocument(button.dataset.id);
+    });
+};
+
+// Restante das funções de editor (handleNewDocument, handleEditDocument, handleSaveDocument, 
+// handleDeleteDocument, addSection, removeSection, handleEditSection, handleSaveSectionModal, 
+// addBlock, removeBlock, handleEditBlock, handleSaveBlockModal, addDetail, removeDetail, 
+// renderDetailEditorInModal, renderBlockEditor, renderSectionEditor, attachDynamicListeners) 
+// permanecem inalteradas, exceto a chamada a renderDocumentList que agora deve ser renderDocumentList() 
+// para usar a lista global 'documents'. (Já ajustado em fetchDocuments e switchTab).
+
+
+/**
+ * Inicia o modo de criação de novo documento. (MANTIDA)
+ */
+const handleNewDocument = () => {
+    // 1. Resetar o formulário
+    formData = {
+        tituloDocumento: '',
+        identificador: '',
+        secoes: [] // Inicia vazia
+    };
+    
+    // 2. Limpar campos principais do DOM e habilitar o identificador
+    document.getElementById('tituloDocumento').value = '';
+    document.getElementById('identificador').value = '';
+    document.getElementById('identificador').disabled = false; 
+
+    // 3. Atualizar estados de edição
+    currentDoc = null;
+    isEditing = true;
+    
+    // 4. Renderizar o editor de seções vazio
+    renderSections(); 
+    
+    // 5. Mudar para a aba de edição
+    switchTab('edit');
+};
+
+/**
+ * Carrega um documento existente para edição. (MANTIDA)
+ */
+const handleEditDocument = async (identifier) => {
+    try {
+        const response = await fetch(`${API_URL}/id/${identifier}`);
+        const data = await response.json();
+        
+        if (data.sucesso) {
+            // Atualiza o estado
+            formData = {
+                tituloDocumento: data.dados.tituloDocumento,
+                identificador: data.dados.identificador,
+                // A estrutura de 'secoes' carregada da API já está no novo formato (com 'blocos')
+                secoes: data.dados.secoes || [] 
+            };
+            currentDoc = identifier;
+            isEditing = true;
+
+            // Preenche campos principais
+            document.getElementById('tituloDocumento').value = formData.tituloDocumento;
+            document.getElementById('identificador').value = formData.identificador;
+            document.getElementById('identificador').disabled = true; 
+            
+            renderSections();
+            switchTab('edit');
+        } else {
+            alert(data.mensagem || 'Documento não encontrado.');
+        }
+    } catch (error) {
+        console.error('Erro ao carregar documento:', error);
+        alert('Erro ao carregar documento para edição.');
+    }
+};
+
+/**
+ * Salva ou atualiza um documento. (MANTIDA)
+ */
+const handleSaveDocument = async () => {
+    // Validação básica
+    if (!formData.tituloDocumento || !formData.identificador) {
+        alert('Preencha o Título e o Identificador do documento.');
+        return;
+    }
+
+    const method = currentDoc ? 'PUT' : 'POST';
+    const url = currentDoc ? `${API_URL}/${currentDoc}` : API_URL;
+
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+        if (data.sucesso) {
+            alert('Documento salvo com sucesso!');
+            await fetchDocuments();
+            // Volta para a lista
+            isEditing = false;
+            currentDoc = null;
+            switchTab('list');
+        } else {
+            alert(data.mensagem || 'Erro ao salvar documento');
+        }
+    } catch (error) {
+        console.error('Erro ao salvar:', error);
+        alert('Erro ao salvar documento');
+    }
+};
+
+/**
+ * Exclui um documento. (MANTIDA)
+ */
+const handleDeleteDocument = async (identifier) => {
+    if (!confirm('Deseja realmente excluir este documento?')) return;
+
+    try {
+        const response = await fetch(`${API_URL}/${identifier}`, {
+            method: 'DELETE'
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+            alert('Documento excluído!');
+            fetchDocuments();
+        } else {
+            alert(data.mensagem || 'Erro ao excluir documento');
+        }
+    } catch (error) {
+        console.error('Erro ao excluir:', error);
+        alert('Erro ao excluir documento');
+    }
+};
+
+// ------------------- Funções de Seção -------------------
+
+/**
+ * Adiciona uma nova seção ao formulário.
+ */
+const addSection = () => {
+    formData.secoes.push({
+        tituloSecao: `Nova Seção ${formData.secoes.length + 1}`,
+        subtituloSecao: '',
+        blocos: [
+            {
+                tipoBloco: 'textoBruto',
+                tituloBloco: 'Primeiro Bloco de Texto',
+                descricaoBloco: 'Edite esta seção e bloco para começar a documentar.',
+                valorBruto: '' 
+            }
+        ],
+        secoesAninhadas: []
+    });
+    renderSections();
+};
+
+/**
+ * Remove uma seção do formulário.
+ */
+const removeSection = (sectionIndex) => {
+    if (confirm(`Deseja realmente remover a seção "${formData.secoes[sectionIndex].tituloSecao || `Seção ${sectionIndex + 1}`}" e todo o seu conteúdo?`)) {
+        formData.secoes.splice(sectionIndex, 1);
+        renderSections();
+    }
+};
+
+/**
+ * Abre o modal de edição de seção. (NOVA)
+ */
+const handleEditSection = (sectionIndex) => {
+    currentSectionIndex = sectionIndex;
+    const section = formData.secoes[sectionIndex];
+    
+    // Preenche o modal
+    document.getElementById('section-tituloSecao').value = section.tituloSecao || '';
+    document.getElementById('section-subtituloSecao').value = section.subtituloSecao || '';
+    
+    // Altera o título do modal
+    document.getElementById('sectionEditorModalLabel').textContent = section.tituloSecao ? `✏️ Editar Seção: ${section.tituloSecao}` : '✏️ Editar Nova Seção';
+
+    sectionModal.show();
+};
+
+/**
+ * Salva os dados do modal de seção de volta ao formData. (NOVA)
+ */
+const handleSaveSectionModal = () => {
+    const sectionIndex = currentSectionIndex;
+    const titulo = document.getElementById('section-tituloSecao').value;
+    const subtitulo = document.getElementById('section-subtituloSecao').value;
+    
+    if (!titulo) {
+        alert('O Título da Seção é obrigatório.');
+        return;
+    }
+
+    formData.secoes[sectionIndex].tituloSecao = titulo;
+    formData.secoes[sectionIndex].subtituloSecao = subtitulo;
+
+    sectionModal.hide();
+    renderSections(); // Re-renderiza para atualizar os títulos no painel principal
+};
+
+
+// ------------------- Funções de Bloco -------------------
+
+/**
+ * Adiciona um novo bloco de conteúdo a uma seção.
+ */
+const addBlock = (sectionIndex, type) => {
+    let newBlock = {
+        tipoBloco: type,
+        tituloBloco: '',
+        descricaoBloco: '',
+        // Adiciona campos específicos por tipo
+        ...(type === 'detalhes' || type === 'credenciais' ? { detalhes: [] } : {}),
+        ...(type === 'imagem' ? { urlImagem: '', altImagem: '', valorBruto: '' } : { valorBruto: '' }),
+    };
+
+    formData.secoes[sectionIndex].blocos.push(newBlock);
+    renderSections();
+};
+
+/**
+ * Remove um bloco de conteúdo de uma seção.
+ */
+const removeBlock = (sectionIndex, blockIndex) => {
+    if (confirm('Deseja realmente remover este bloco de conteúdo?')) {
+        formData.secoes[sectionIndex].blocos.splice(blockIndex, 1);
+        renderSections();
+    }
+};
+
+/**
+ * Abre o modal de edição de bloco e preenche os campos. (NOVA E PRINCIPAL)
+ */
+const handleEditBlock = (sectionIndex, blockIndex) => {
+    currentSectionIndex = sectionIndex;
+    currentBlockIndex = blockIndex;
+    const block = formData.secoes[sectionIndex].blocos[blockIndex];
+    
+    // Limpa campos específicos
+    document.querySelectorAll('.content-specific-field').forEach(div => div.classList.add('d-none'));
+
+    // 1. Preenche campos comuns (subtítulos modulares)
+    document.getElementById('blockEditorModalLabel').textContent = block.tituloBloco ? `⚙️ Editar Bloco: ${block.tituloBloco}` : `⚙️ Editar Bloco de ${BLOCK_TYPES[block.tipoBloco].label}`;
+    document.getElementById('block-tipoBloco').value = block.tipoBloco;
+    document.getElementById('block-tipoBloco').disabled = true; // Tipo não pode ser alterado após a criação
+    document.getElementById('block-tituloBloco').value = block.tituloBloco || '';
+    document.getElementById('block-descricaoBloco').value = block.descricaoBloco || '';
+    
+    // 2. Preenche campos específicos
+    switch (block.tipoBloco) {
+        case 'textoBruto':
+        case 'blocoCodigo':
+        case 'mapaRede':
+            document.getElementById('content-valorBruto').classList.remove('d-none');
+            document.getElementById('label-valorBruto').textContent = block.tipoBloco === 'textoBruto' ? 'Conteúdo Principal (Texto Simples) *' : (block.tipoBloco === 'blocoCodigo' ? 'Código/Comandos *' : 'Mapa de Rede/Diagrama (ASCII) *');
+            document.getElementById('block-valorBruto').value = block.valorBruto || '';
+            break;
+            
+        case 'detalhes':
+        case 'credenciais':
+            document.getElementById('content-detalhes').classList.remove('d-none');
+            // Renderiza o editor de detalhes dentro do Modal
+            renderDetailEditorInModal(block, sectionIndex, blockIndex); 
+            break;
+            
+        case 'imagem':
+            document.getElementById('content-imagem').classList.remove('d-none');
+            document.getElementById('content-valorBruto').classList.remove('d-none'); // Texto adicional
+            document.getElementById('label-valorBruto').textContent = 'Texto Adicional (Opcional)';
+            document.getElementById('block-urlImagem').value = block.urlImagem || '';
+            document.getElementById('block-altImagem').value = block.altImagem || '';
+            document.getElementById('block-valorBruto').value = block.valorBruto || '';
+            break;
+    }
+
+    blockModal.show();
+};
+
+/**
+ * Salva os dados do modal de bloco de volta ao formData. (NOVA)
+ */
+const handleSaveBlockModal = () => {
+    const sectionIndex = currentSectionIndex;
+    const blockIndex = currentBlockIndex;
+    const block = formData.secoes[sectionIndex].blocos[blockIndex];
+
+    // 1. Salva campos comuns
+    block.tituloBloco = document.getElementById('block-tituloBloco').value;
+    block.descricaoBloco = document.getElementById('block-descricaoBloco').value;
+
+    // 2. Salva campos específicos
+    switch (block.tipoBloco) {
+        case 'textoBruto':
+        case 'blocoCodigo':
+        case 'mapaRede':
+            block.valorBruto = document.getElementById('block-valorBruto').value;
+            break;
+            
+        case 'detalhes':
+        case 'credenciais':
+            // Os detalhes já foram atualizados no formData via `updateDetail` no `oninput`
+            // Nada a fazer aqui.
+            break;
+            
+        case 'imagem':
+            block.urlImagem = document.getElementById('block-urlImagem').value;
+            block.altImagem = document.getElementById('block-altImagem').value;
+            block.valorBruto = document.getElementById('block-valorBruto').value;
+            break;
+    }
+    
+    // Opcional: Revalidação (ex: campo valorBruto para texto simples não deve ser vazio)
+    if ((block.tipoBloco === 'textoBruto' || block.tipoBloco === 'blocoCodigo' || block.tipoBloco === 'mapaRede') && !block.valorBruto) {
+        // Alerta não-bloqueante para evitar perda de dados no modal
+        console.warn('Conteúdo principal vazio.');
+    }
+
+    blockModal.hide();
+    renderSections();
+};
+
+
+// ------------------- Funções de Detalhe (Aninhadas) -------------------
+
+/**
+ * Adiciona um par Rótulo:Valor (Detalhe) a um bloco (NOVA: Usada apenas dentro do Modal).
+ */
+const addDetail = () => {
+    const block = formData.secoes[currentSectionIndex].blocos[currentBlockIndex];
+    if (!block.detalhes) {
+        block.detalhes = [];
+    }
+    block.detalhes.push({ rotulo: '', valor: '' });
+    // Re-renderiza o editor de detalhes (dentro do modal)
+    renderDetailEditorInModal(block, currentSectionIndex, currentBlockIndex); 
+};
+
+/**
+ * Remove um par Rótulo:Valor (Detalhe) de um bloco (NOVA: Usada apenas dentro do Modal).
+ */
+const removeDetail = (detailIndex) => {
+    const block = formData.secoes[currentSectionIndex].blocos[currentBlockIndex];
+    block.detalhes.splice(detailIndex, 1);
+    // Re-renderiza o editor de detalhes (dentro do modal)
+    renderDetailEditorInModal(block, currentSectionIndex, currentBlockIndex);
+};
+
+/**
+ * Atualiza um par Rótulo:Valor (Detalhe) dentro de um bloco.
+ * É global para ser usado com oninput. (MANTIDA)
+ */
+window.updateDetail = (sectionIndex, blockIndex, detailIndex, field, value) => {
+    // Note que esta função usa os índices passados no HTML, não o estado global `current...Index`
+    formData.secoes[sectionIndex].blocos[blockIndex].detalhes[detailIndex][field] = value;
+};
+
+
+// ------------------- Funções de Renderização do Editor Modular -------------------
+
+/**
+ * Renderiza o editor de detalhes DENTRO do Modal. (MODIFICADA)
+ * @param {object} block
+ * @param {number} sectionIndex
+ * @param {number} blockIndex
+ */
+const renderDetailEditorInModal = (block, sectionIndex, blockIndex) => {
+    const detailsContainer = document.getElementById('detalhes-list');
+    const details = block.detalhes || [];
+    const isCredencial = block.tipoBloco === 'credenciais';
+    let html = '';
+
+    if (details.length === 0) {
+        detailsContainer.innerHTML = '<p class="text-center text-muted m-0" id="empty-detalhes-message">Nenhum detalhe adicionado.</p>';
+        return;
+    }
+
+    details.forEach((detail, detailIndex) => {
+        // Passa os índices do formData para o updateDetail
+        html += `
+            <div class="input-group mb-2 detail-row">
+                <input type="text" class="form-control form-control-sm" placeholder="Rótulo (ex: Usuário / IP)" 
+                        value="${detail.rotulo || ''}" 
+                        oninput="window.updateDetail(${sectionIndex}, ${blockIndex}, ${detailIndex}, 'rotulo', this.value)">
+                <input type="text" class="form-control form-control-sm" placeholder="Valor (ex: admin / 192.168.1.1)" 
+                        value="${detail.valor || ''}" 
+                        oninput="window.updateDetail(${sectionIndex}, ${blockIndex}, ${detailIndex}, 'valor', this.value)">
+                <button class="btn btn-sm btn-outline-danger btn-remove-detail-modal" type="button" 
+                        data-detail-index="${detailIndex}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    });
+
+    detailsContainer.innerHTML = html;
+    
+    // Listener para remover detalhe no Modal (usa o removeDetail simplificado)
+    document.querySelectorAll('.btn-remove-detail-modal').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            const detailIndex = parseInt(button.dataset.detailIndex);
+            removeDetail(detailIndex); // Chama a função que re-renderiza o modal de detalhes
+        };
+    });
+};
+
+/**
+ * Renderiza o cartão de um bloco no editor principal (apenas visualização/botão de edição). (MANTIDA)
+ */
+const renderBlockEditor = (block, sectionIndex, blockIndex) => {
+    const type = block.tipoBloco;
+    const uniqueId = `sec${sectionIndex}-block${blockIndex}`;
+    
+    const blockTitle = block.tituloBloco || BLOCK_TYPES[type].label;
+    const blockDescription = block.descricaoBloco ? `<p class="mb-0 text-muted"><small>${block.descricaoBloco}</small></p>` : '';
+
+    return `
+        <div class="block-item border p-3 mb-3 bg-white rounded shadow-sm d-flex justify-content-between align-items-center" id="${uniqueId}">
+            <div>
+                <span class="badge bg-secondary me-2"><i class="${BLOCK_TYPES[type].icon}"></i></span>
+                <span class="fw-bold">${blockTitle}</span>
+                ${blockDescription}
+            </div>
+            <div class="btn-group" role="group">
+                <button class="btn btn-sm btn-info btn-edit-block" type="button" 
+                        data-section-index="${sectionIndex}" data-block-index="${blockIndex}" title="Editar Bloco">
+                    <i class="fas fa-pencil-alt"></i> Editar
+                </button>
+                <button class="btn btn-sm btn-outline-danger btn-remove-block" type="button" 
+                        data-section-index="${sectionIndex}" data-block-index="${blockIndex}" title="Remover Bloco">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </div>
+        </div>
+    `;
+};
+
+/**
+ * Renderiza o HTML de uma única seção no editor. (MANTIDA)
+ */
+const renderSectionEditor = (section, sectionIndex) => {
+    const blocksHtml = (section.blocos || [])
+                        .map((block, blockIndex) => renderBlockEditor(block, sectionIndex, blockIndex))
+                        .join('');
+    
+    const addBlockDropdown = `
+        <div class="dropdown d-grid">
+            <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-layer-group"></i> Adicionar Bloco de Conteúdo
+            </button>
+            <ul class="dropdown-menu">
+                ${Object.keys(BLOCK_TYPES).map(type => `
+                    <li><a class="dropdown-item btn-add-block" href="#" 
+                            data-section-index="${sectionIndex}" data-block-type="${type}">
+                            <i class="${BLOCK_TYPES[type].icon} fa-fw me-1"></i> ${BLOCK_TYPES[type].label}
+                    </a></li>
+                `).join('')}
+            </ul>
+        </div>
+    `;
+    
+    return `
+        <div class="section-item border border-secondary-subtle rounded-3 mb-4" id="section-${sectionIndex}">
+            <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-top shadow-sm">
+                <div class="d-flex flex-column">
+                    <h4 class="h6 mb-0 section-title text-primary">${section.tituloSecao || `Seção ${sectionIndex + 1}`}</h4>
+                    <small class="text-muted">${section.subtituloSecao || ''}</small>
+                </div>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-warning btn-edit-section" data-index="${sectionIndex}" title="Editar Título/Subtítulo">
+                        <i class="fas fa-pencil-alt"></i> Editar Título
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger btn-remove-section" data-index="${sectionIndex}" title="Remover Seção">
+                        <i class="fas fa-trash-alt"></i> Remover
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-4">
+                <div class="blocks-container">
+                    ${blocksHtml || '<p class="text-center text-muted py-3 m-0">Nenhum bloco de conteúdo nesta seção.</p>'}
+                </div>
+                
+                ${addBlockDropdown}
+
+            </div>
+        </div>
+    `;
+};
+
+
+/**
+ * Renderiza todas as seções do formData no editor.
+ */
+const renderSections = () => {
+    const editorList = document.getElementById('sections-editor-list');
+    const emptyMessage = document.getElementById('empty-sections-message');
+    editorList.innerHTML = '';
+    
+    if (formData.secoes.length === 0) {
+        emptyMessage.classList.remove('d-none');
+        return;
+    }
+    
+    emptyMessage.classList.add('d-none');
+    
+    let sectionsHtml = '';
+    formData.secoes.forEach((section, index) => {
+        sectionsHtml += renderSectionEditor(section, index);
+    });
+    
+    editorList.innerHTML = sectionsHtml;
+    
+    // Anexar Listeners para botões que são renderizados dinamicamente
+    attachDynamicListeners();
+};
+
+
+/**
+ * Anexa listeners a botões criados dinamicamente (remover seção, adicionar detalhe, etc.). (MANTIDA)
+ */
+const attachDynamicListeners = () => {
+    // 1. Listeners para Remover Seção
+    document.querySelectorAll('.btn-remove-section').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            const index = parseInt(button.dataset.index);
+            removeSection(index);
+        };
+    });
+
+    // 2. Listeners para Adicionar Bloco
+    document.querySelectorAll('.btn-add-block').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            const sectionIndex = parseInt(button.dataset.sectionIndex);
+            const blockType = button.dataset.blockType;
+            addBlock(sectionIndex, blockType);
+        };
+    });
+    
+    // 3. Listeners para Remover Bloco
+    document.querySelectorAll('.btn-remove-block').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            const sectionIndex = parseInt(button.dataset.sectionIndex);
+            const blockIndex = parseInt(button.dataset.blockIndex);
+            removeBlock(sectionIndex, blockIndex);
+        };
+    });
+
+    // 4. Listeners para Editar Seção (NOVO)
+    document.querySelectorAll('.btn-edit-section').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            const sectionIndex = parseInt(button.dataset.index);
+            handleEditSection(sectionIndex);
+        };
+    });
+
+    // 5. Listeners para Editar Bloco (NOVO)
+    document.querySelectorAll('.btn-edit-block').forEach(button => {
+        button.onclick = (e) => {
+            e.preventDefault();
+            const sectionIndex = parseInt(button.dataset.sectionIndex);
+            const blockIndex = parseInt(button.dataset.blockIndex);
+            handleEditBlock(sectionIndex, blockIndex);
+        };
+    });
+    
+    // 6. Listener para Adicionar Detalhe dentro do Modal
+    document.getElementById('btn-add-detalhe').onclick = (e) => {
+        e.preventDefault();
+        addDetail(); // Usa o índice de estado global
+    };
+};
+
+
+// ==========================================================
+// 4. INICIALIZAÇÃO E LISTENERS ESTÁTICOS (MODIFICADO)
 // ==========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar instâncias do Bootstrap Modal
+    blockModal = new bootstrap.Modal(document.getElementById('blockEditorModal'));
+    sectionModal = new bootstrap.Modal(document.getElementById('sectionEditorModal'));
+    
+    // Inicializar a primeira aba (Lista)
+    switchTab('list');
     fetchDocuments();
+
+    // Listeners do formulário principal
+    document.getElementById('tituloDocumento').addEventListener('input', (e) => updateFormData('tituloDocumento', e.target.value));
+    document.getElementById('identificador').addEventListener('input', (e) => updateFormData('identificador', e.target.value.toUpperCase().replace(/\s/g, '-'))); 
     
-    // Adiciona funcionalidade de arrastar e soltar (SortableJS) às seções do formulário
-    // (Mantido, mas lembre-se que o código atual só lida com o 1º nível)
-    const sectionsContainer = document.getElementById('sections-container');
-    if (sectionsContainer) {
-        new Sortable(sectionsContainer, {
-            handle: '.drag-handle', 
-            animation: 150
-        });
-    }
-
-    // Adiciona o evento de clique na aba de visualização
-    document.getElementById('visualizar-tab').addEventListener('click', () => {
-        // Se a guia de visualização for clicada, renderize o documento que está ativo na tabela.
-        // Se nenhum estiver ativo, ele exibirá a mensagem padrão.
-        const activeIdentifier = localStorage.getItem('activeDocIdentifier');
-        if (activeIdentifier) {
-             fetchDocumentForRender(activeIdentifier);
-        }
-    });
-});
-
-// ==========================================================
-// 2. COMUNICAÇÃO COM API (CRUD)
-// ==========================================================
-
-// A. LER: Busca todos os documentos e preenche a tabela
-async function fetchDocuments() {
-    try {
-        const response = await fetch(API_BASE_URL);
-        if (!response.ok) throw new Error('Falha na resposta da API.');
-        
-        const data = await response.json();
-        
-        if (data.sucesso && data.dados && data.dados.length > 0) {
-            renderDocumentList(data.dados);
-        } else {
-            document.getElementById('docs-table-body').innerHTML = '<tr><td colspan="4">Nenhuma documentação encontrada.</td></tr>';
-        }
-
-    } catch (error) {
-        console.error('Erro ao buscar documentos:', error);
-        showAlert('Erro ao carregar a lista de documentos. Verifique a conexão com o servidor Express.', 'danger');
-    }
-}
-
-// B. LER UM: Busca um documento específico para EDIÇÃO
-async function fetchDocumentForEdit(identifier) {
-    try {
-        // NOTA: Para edição por identificador, sua API precisa de uma rota GET que use o IDENTIFICADOR.
-        // Se sua API usa o _id, esta URL pode falhar. Assumindo que a API aceita o identificador:
-        const response = await fetch(`${API_BASE_URL}/id/${identifier}`); // Assumindo uma rota GET /api/docs/id/:identificador
-        const data = await response.json();
-        
-        if (data.sucesso) {
-            currentDocIdentifier = identifier;
-            fillEditForm(data.dados);
-            showEditForm(identifier);
-        } else {
-            showAlert(data.mensagem || 'Documento não encontrado.', 'danger');
-        }
-
-    } catch (error) {
-        console.error('Erro ao buscar documento para edição:', error);
-        showAlert('Erro ao buscar documento para edição. Certifique-se de que a rota GET /api/docs/id/:identificador existe.', 'danger');
-    }
-}
-
-// B-EXTRA. LER UM: Busca documento para RENDERIZAÇÃO
-async function fetchDocumentForRender(identifier) {
-    localStorage.setItem('activeDocIdentifier', identifier); // Salva o doc ativo
-    const renderContainer = document.getElementById('doc-content');
-    renderContainer.innerHTML = `<p class="text-center text-info">Carregando ${identifier}...</p>`;
-
-    try {
-        // NOTA: Para buscar um documento inteiro (com todas as seções e subseções) para renderização
-        const response = await fetch(`${API_BASE_URL}/id/${identifier}`); 
-        const data = await response.json();
-        
-        if (data.sucesso) {
-            renderFullDocument(data.dados);
-            
-            // Ativa a aba de Visualização
-            const visualizeTab = new bootstrap.Tab(document.getElementById('visualizar-tab'));
-            visualizeTab.show();
-
-        } else {
-            renderContainer.innerHTML = `<p class="alert alert-danger">Falha ao carregar documento: ${data.mensagem || 'Erro desconhecido.'}</p>`;
-        }
-
-    } catch (error) {
-        console.error('Erro ao buscar documento para visualização:', error);
-        renderContainer.innerHTML = `<p class="alert alert-danger">Erro de conexão ao renderizar documento.</p>`;
-    }
-}
-
-// C. SALVAR/CRIAR
-async function saveDocument() {
-    const identifier = document.getElementById('identificador').value.trim();
-    const isNew = currentDocIdentifier === 'new';
-    
-    const method = isNew ? 'POST' : 'PUT';
-    // Assumindo que PUT usa o identificador na URL: /api/docs/:identificador
-    const url = isNew ? API_BASE_URL : `${API_BASE_URL}/${identifier}`;
-
-    // 1. Coleta os dados do formulário e as seções
-    try {
-        const docData = {
-            tituloDocumento: document.getElementById('tituloDocumento').value,
-            identificador: identifier,
-            // AQUI O PROBLEMA DO CÓDIGO ANTERIOR: O collectSectionsData() NÃO TRAZ SEÇÕES ANINHADAS.
-            // Para manter a complexidade do CRUD baixa, assumimos que ele só edita o primeiro nível
-            secoes: collectSectionsData() 
-        };
-        
-        if (!docData.tituloDocumento || !docData.identificador) {
-            showAlert("Título e Identificador são obrigatórios.", 'warning');
-            return;
-        }
-
-        // 2. Envia para a API
-        const response = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(docData)
-        });
-
-        const data = await response.json();
-
-        if (data.sucesso) {
-            showAlert(`Documentação ${isNew ? 'criada' : 'atualizada'} com sucesso!`, 'success');
-            cancelEdit(); 
-            fetchDocuments(); 
-        } else {
-            showAlert(`Falha ao salvar: ${data.mensagem || 'Erro desconhecido.'}`, 'danger');
-        }
-
-    } catch (error) {
-        console.error('Erro ao salvar documento:', error);
-        showAlert('Erro de conexão ao tentar salvar o documento.', 'danger');
-    }
-}
-
-// D. DELETAR
-async function deleteDocument() {
-    if (!currentDocIdentifier || currentDocIdentifier === 'new') return;
-    
-    if (!confirm(`Tem certeza que deseja DELETAR o documento ${currentDocIdentifier}? Esta ação é irreversível.`)) return;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/${currentDocIdentifier}`, {
-            method: 'DELETE'
-        });
-
-        const data = await response.json();
-
-        if (data.sucesso) {
-            showAlert(`Documentação ${currentDocIdentifier} deletada com sucesso.`, 'success');
-            cancelEdit();
-            fetchDocuments();
-            // Limpa a visualização e o documento ativo
-            document.getElementById('doc-content').innerHTML = '<p class="text-center text-muted">Documento deletado.</p>';
-            localStorage.removeItem('activeDocIdentifier');
-        } else {
-            showAlert(`Falha ao deletar: ${data.mensagem || 'Erro desconhecido.'}`, 'danger');
-        }
-
-    } catch (error) {
-        console.error('Erro ao deletar documento:', error);
-        showAlert('Erro de conexão ao tentar deletar o documento.', 'danger');
-    }
-}
-
-// ==========================================================
-// 3. FUNÇÕES DE RENDERIZAÇÃO E INTERFACE (CRUD)
-// ==========================================================
-
-// A. Renderiza a tabela principal
-function renderDocumentList(docs) {
-    const tbody = document.getElementById('docs-table-body');
-    tbody.innerHTML = '';
-
-    docs.forEach(doc => {
-        const row = tbody.insertRow();
-        const lastUpdated = new Date(doc.ultimaAtualizacao).toLocaleString('pt-BR');
-
-        row.insertCell(0).textContent = doc.identificador;
-        row.insertCell(1).textContent = doc.tituloDocumento;
-        row.insertCell(2).textContent = lastUpdated;
-        
-        const actionsCell = row.insertCell(3);
-        
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'btn btn-sm btn-info text-white me-2';
-        viewBtn.textContent = 'Visualizar';
-        // Usa a nova função para carregar e mudar para a aba de visualização
-        viewBtn.onclick = () => fetchDocumentForRender(doc.identificador); 
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'btn btn-sm btn-warning';
-        editBtn.textContent = 'Editar';
-        editBtn.onclick = () => fetchDocumentForEdit(doc.identificador);
-
-        actionsCell.appendChild(viewBtn);
-        actionsCell.appendChild(editBtn);
-    });
-}
-
-// C. Preenche o formulário para edição
-function fillEditForm(doc) {
-    document.getElementById('tituloDocumento').value = doc.tituloDocumento;
-    document.getElementById('identificador').value = doc.identificador;
-    
-    // O formulário de seções modularizado só pode lidar com o primeiro nível de seções
-    renderSectionsForm(doc.secoes || []);
-}
-
-// D. Renderiza o Formularia Modular de Seções (Apenas Nível 1)
-function renderSectionsForm(secoes) {
-    const container = document.getElementById('sections-container');
-    container.innerHTML = ''; 
-    
-    secoes.forEach((s, index) => {
-        // Cria e anexa a estrutura HTML da seção
-        const sectionDiv = createSectionDiv(s, index);
-        container.appendChild(sectionDiv);
-    });
-    
-    // Adiciona o botão de adicionar nova seção
-    container.insertAdjacentHTML('beforeend', '<button type="button" class="btn btn-outline-primary mt-3" onclick="addEmptySection()">+ Adicionar Nova Seção</button>');
-}
-
-// E. Cria a estrutura HTML de uma única seção para o formulário
-function createSectionDiv(s, index) {
-    const sectionDiv = document.createElement('div');
-    sectionDiv.className = 'section-item border p-3 mb-3 bg-white shadow-sm';
-    sectionDiv.setAttribute('data-index', index);
-    
-    // Adiciona um campo TEXTAREA para o JSON de Subseções.
-    // Isso é feito para que as subseções não se percam, mas elas se tornam JSON manual.
-    const subsecoesJSON = JSON.stringify(s.secoesAninhadas || [], null, 2);
-
-    // O restante do seu HTML modularizado (mantido, com adição do campo de texto bruto)
-    sectionDiv.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0 text-primary">Seção #${index + 1} - ${s.tituloSecao}</h5>
-            <div>
-                <span class="drag-handle me-3 text-muted" title="Arrastar">☰</span>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeSection(this)">Remover</button>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Título Principal</label>
-                <input type="text" class="form-control section-title" value="${s.tituloSecao}" required>
-            </div>
-            <div class="col-md-6 mb-3">
-                <label class="form-label">Subtítulo</label>
-                <input type="text" class="form-control section-subtitle" value="${s.subtituloSecao || ''}">
-            </div>
-            <div class="col-12 mb-3">
-                <label class="form-label">Tipo de Conteúdo</label>
-                <select class="form-select section-type" onchange="toggleContentFields(this)">
-                    <option value="infoGeral" ${s.tipoConteudo === 'infoGeral' ? 'selected' : ''}>Informação Geral (Lista de Pares)</option>
-                    <option value="credenciais" ${s.tipoConteudo === 'credenciais' ? 'selected' : ''}>Credenciais (Caixa de Destaque)</option>
-                    <option value="imagem" ${s.tipoConteudo === 'imagem' ? 'selected' : ''}>Imagem (URL)</option>
-                    <option value="mapaRede" ${s.tipoConteudo === 'mapaRede' ? 'selected' : ''}>Mapa de Rede/Texto Formatado</option>
-                    <option value="blocoCodigo" ${s.tipoConteudo === 'blocoCodigo' ? 'selected' : ''}>Bloco de Código/Texto Bruto</option>
-                </select>
-            </div>
-        </div>
-        
-        <div class="section-content-fields mt-2 p-3 border rounded">
-            ${generateContentFields(s)}
-        </div>
-        
-        <h6 class="mt-4">Subseções Aninhadas (JSON)</h6>
-        <textarea class="form-control section-nested-json" rows="5" placeholder="Cole aqui o JSON array para as subseções aninhadas.">${subsecoesJSON}</textarea>
-        <div class="form-text text-danger">⚠️ Edição complexa! O JSON de subseções aninhadas deve ser mantido manualmente.</div>
-        
-        <hr class="mt-4" />
-    `;
-    return sectionDiv;
-}
-
-// F. Função auxiliar para gerar campos de conteúdo específicos
-function generateContentFields(section) {
-    let html = '';
-    const tipo = section.tipoConteudo;
-    const conteudo = section.conteudo || {};
-
-    if (tipo === 'imagem') {
-        html = `
-            <label class="form-label">URL da Imagem</label>
-            <input type="url" class="form-control content-url-image" value="${conteudo.urlImagem || ''}" placeholder="Ex: https://img.exemplo.com/diagrama.png">
-            <label class="form-label mt-2">Texto Alternativo (Alt)</label>
-            <input type="text" class="form-control content-alt-image" value="${conteudo.altImagem || ''}">
-            <label class="form-label mt-2">Texto Bruto Adicional</label>
-            <textarea class="form-control content-raw-text" rows="3">${conteudo.textoBruto || ''}</textarea>
-        `;
-    } else if (tipo === 'mapaRede' || tipo === 'blocoCodigo' || tipo === 'credenciais') {
-        // CREDENCIAIS, MAPA e BLOCO DE CÓDIGO são todos baseados em texto bruto
-        html = `
-            <label class="form-label">${tipo === 'credenciais' ? 'Credenciais (Texto Bruto/Formatado)' : 'Texto Bruto/Código (Mantém quebras de linha e espaços)'}</label>
-            <textarea class="form-control content-raw-text" rows="5">${conteudo.textoBruto || ''}</textarea>
-            ${tipo === 'credenciais' ? '<div class="form-text text-info">Use quebras de linha para formatar.</div>' : ''}
-        `;
-        // Credenciais não têm lista de detalhes, apenas textoBruto
-    } else if (tipo === 'infoGeral') {
-         // INFO GERAL pode ter texto bruto E lista de detalhes
-        html = `
-            <label class="form-label">Texto Bruto/Descrição</label>
-            <textarea class="form-control content-raw-text" rows="3">${conteudo.textoBruto || ''}</textarea>
-
-            <h6 class="mt-3">Pares Rótulo: Valor (Detalhamento)</h6>
-            <div class="content-details-container">`;
-        
-        // Garante que pelo menos um campo vazio seja exibido para novos detalhes
-        const detalhes = (conteudo.detalhes && conteudo.detalhes.length > 0) ? conteudo.detalhes : [{ rotulo: '', valor: '' }];
-
-        detalhes.forEach(detail => {
-            html += generateDetailRow(detail.rotulo, detail.valor);
-        });
-        
-        html += `</div><button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addDetailRow(this)">+ Adicionar Detalhe</button>`;
-    }
-    return html;
-}
-
-// G. Adiciona um novo par Rótulo/Valor e H. Adicionar seção vazia (Mantidos)
-function addDetailRow(buttonElement) {
-    const container = buttonElement.previousElementSibling;
-    container.insertAdjacentHTML('beforeend', generateDetailRow('', ''));
-}
-
-function generateDetailRow(rotulo, valor) {
-    return `
-        <div class="row mb-2 detail-row">
-            <div class="col-5">
-                <input type="text" class="form-control detail-label" value="${rotulo}" placeholder="Rótulo (Ex: IP Principal)">
-            </div>
-            <div class="col-6">
-                <input type="text" class="form-control detail-value" value="${valor}" placeholder="Valor (Ex: 192.168.10.201)">
-            </div>
-            <div class="col-1 p-0">
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.detail-row').remove()">x</button>
-            </div>
-        </div>
-    `;
-}
-
-function addEmptySection() {
-    const newSectionData = {
-        tituloSecao: 'Nova Seção (Clique para Editar)',
-        subtituloSecao: '',
-        tipoConteudo: 'infoGeral',
-        conteudo: { textoBruto: '', detalhes: [{ rotulo: '', valor: '' }] }
+    // Botões Estáticos
+    document.getElementById('btn-new-document').onclick = handleNewDocument;
+    document.getElementById('btn-create-first').onclick = handleNewDocument;
+    document.getElementById('btn-save-document').onclick = handleSaveDocument;
+    document.getElementById('btn-add-section').onclick = addSection;
+    document.getElementById('btn-add-section-empty').onclick = addSection;
+    document.getElementById('btn-cancel-edit').onclick = () => {
+        isEditing = false;
+        currentDoc = null;
+        switchTab('list');
     };
     
-    // Coleta os dados atuais, adiciona o novo e redesenha o formulário inteiro.
-    renderSectionsForm([...collectSectionsData(), newSectionData]); 
-}
+    // Botões dos Modals
+    document.getElementById('btn-save-block').onclick = handleSaveBlockModal;
+    document.getElementById('btn-save-section').onclick = handleSaveSectionModal;
 
-// I. Alternar campos de conteúdo quando o tipo muda (Ajustado)
-function toggleContentFields(selectElement) {
-    const sectionItem = selectElement.closest('.section-item');
-    const contentContainer = sectionItem.querySelector('.section-content-fields');
-    const newType = selectElement.value;
-    
-    // Cria uma seção de manequim (dummy) com o novo tipo para gerar o HTML de edição correto
-    const dummySection = { tipoConteudo: newType, conteudo: {} };
-    contentContainer.innerHTML = generateContentFields(dummySection);
-}
-
-// J. Remove uma seção do formulário (Ajustado)
-function removeSection(buttonElement) {
-    if (confirm("Deseja realmente remover esta seção?")) {
-        // Coleta os dados, remove o item e redesenha para atualizar os índices visuais
-        const sectionsData = collectSectionsData();
-        const indexToRemove = Array.from(buttonElement.closest('#sections-container').children).indexOf(buttonElement.closest('.section-item'));
-        sectionsData.splice(indexToRemove, 1);
-        renderSectionsForm(sectionsData);
-    }
-}
-
-
-// K. Coleta os dados de TODAS as seções do formulário para salvar no DB (AJUSTADO PARA INCLUIR TEXTO BRUTO E JSON ANINHADO)
-function collectSectionsData() {
-    const sections = [];
-    document.querySelectorAll('#sections-container > .section-item').forEach(sectionDiv => {
-        const tituloSecao = sectionDiv.querySelector('.section-title').value;
-        const subtituloSecao = sectionDiv.querySelector('.section-subtitle').value;
-        const tipoConteudo = sectionDiv.querySelector('.section-type').value;
-        const nestedJsonText = sectionDiv.querySelector('.section-nested-json').value;
-
-        if (!tituloSecao.trim()) return; 
-
-        const sectionData = {
-            tituloSecao,
-            subtituloSecao: subtituloSecao || undefined,
-            tipoConteudo,
-            conteudo: {}
-        };
-
-        const content = sectionData.conteudo;
-        
-        // Coleta o conteúdo baseado no tipo
-        if (tipoConteudo === 'imagem') {
-            content.urlImagem = sectionDiv.querySelector('.content-url-image').value || undefined;
-            content.altImagem = sectionDiv.querySelector('.content-alt-image').value || undefined;
-            content.textoBruto = sectionDiv.querySelector('.content-raw-text').value || undefined;
-        } else if (tipoConteudo === 'mapaRede' || tipoConteudo === 'blocoCodigo' || tipoConteudo === 'credenciais' || tipoConteudo === 'infoGeral') {
-            content.textoBruto = sectionDiv.querySelector('.content-raw-text').value || undefined;
-        }
-        
-        // Coleta os detalhes (apenas para infoGeral)
-        if (tipoConteudo === 'infoGeral') {
-             content.detalhes = [];
-             sectionDiv.querySelectorAll('.detail-row').forEach(row => {
-                const rotulo = row.querySelector('.detail-label').value;
-                const valor = row.querySelector('.detail-value').value;
-                if (rotulo && valor) { 
-                    content.detalhes.push({ rotulo, valor });
-                }
-            });
-             if (content.detalhes.length === 0) content.detalhes = undefined;
-        }
-
-        // Tenta processar o JSON aninhado
-        if (nestedJsonText.trim()) {
-            try {
-                const nestedSections = JSON.parse(nestedJsonText);
-                if (Array.isArray(nestedSections) && nestedSections.length > 0) {
-                     sectionData.secoesAninhadas = nestedSections;
-                }
-            } catch (e) {
-                showAlert(`Erro de JSON na seção "${tituloSecao}". O conteúdo aninhado será ignorado.`, 'danger');
-                console.error("Erro de JSON em subseções:", e);
-            }
-        }
-        
-        sections.push(sectionData);
+    // Resetar campos de bloco e detalhes ao fechar o modal
+    document.getElementById('blockEditorModal').addEventListener('hidden.bs.modal', () => {
+        document.getElementById('block-tipoBloco').disabled = false;
+        document.getElementById('block-form').reset();
+        currentSectionIndex = -1;
+        currentBlockIndex = -1;
     });
-    return sections;
-}
 
+    // ==========================================================
+    // LISTENERS DE PESQUISA (NOVOS)
+    // ==========================================================
+    const searchInput = document.getElementById('search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
 
-// L. Exibir/Ocultar Formulário (Mantido)
-function showEditForm(identifier) {
-    const formContainer = document.getElementById('document-form-container');
-    const deleteBtn = formContainer.querySelector('#delete-btn');
-    const identifierInput = document.getElementById('identificador');
-    const formActionLabel = document.getElementById('form-action-label');
-
-    formContainer.style.display = 'block';
-    document.getElementById('document-list').style.display = 'none';
-
-    if (identifier === 'new') {
-        currentDocIdentifier = 'new';
-        formActionLabel.textContent = 'Criar';
-        document.getElementById('form-identifier-display').textContent = 'NOVO DOCUMENTO';
-        document.getElementById('doc-form').reset();
-        deleteBtn.style.display = 'none';
-        identifierInput.disabled = false;
-        renderSectionsForm([]); 
-    } else {
-        currentDocIdentifier = identifier;
-        formActionLabel.textContent = 'Editar';
-        document.getElementById('form-identifier-display').textContent = identifier;
-        deleteBtn.style.display = 'inline-block';
-        identifierInput.disabled = true; 
-    }
-}
-
-// M. Cancelar Edição (Mantido)
-function cancelEdit() {
-    document.getElementById('document-form-container').style.display = 'none';
-    document.getElementById('document-list').style.display = 'block';
-    document.getElementById('identificador').disabled = false; 
-    currentDocIdentifier = null;
-    document.getElementById('doc-form').reset();
-    fetchDocuments(); 
-    localStorage.removeItem('activeDocIdentifier');
-}
-
-// N. Exibir Mensagens de Alerta
-function showAlert(message, type) {
-    const alertContainer = document.getElementById('alert-messages');
-    alertContainer.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show" role="alert">
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>`;
-}
-
-
-// ==========================================================
-// 4. FUNÇÕES DE RENDERIZAÇÃO COMPLEXA (VISUALIZAÇÃO)
-// ==========================================================
-
-// Função Principal de Renderização para a aba "Visualizar"
-function renderFullDocument(doc) {
-    const docContent = document.getElementById('doc-content');
-    docContent.innerHTML = ''; // Limpa o conteúdo
-
-    let mainHtml = `<h1>${doc.tituloDocumento}</h1>`;
-    mainHtml += `<p class="lead text-muted">Identificador: ${doc.identificador}</p>`;
-    mainHtml += '<hr>';
-    
-    // Inicia a renderização recursiva
-    if (doc.secoes && doc.secoes.length > 0) {
-        mainHtml += renderSecoes(doc.secoes, 1);
-    } else {
-        mainHtml += '<p class="text-center text-muted">O documento não possui seções.</p>';
-    }
-    
-    const ultimaAtualizacao = doc.ultimaAtualizacao ? new Date(doc.ultimaAtualizacao).toLocaleString('pt-BR') : 'N/A';
-    mainHtml += `<p class="update-info text-end mt-5">Última Atualização: ${ultimaAtualizacao}</p>`;
-
-    docContent.innerHTML = mainHtml;
-}
-
-/**
- * Renderiza o conteúdo de uma seção com base no seu tipo.
- */
-function renderConteudo(tipo, conteudo) {
-    let contentHtml = '';
-
-    if (!conteudo || Object.keys(conteudo).length === 0) {
-        return '';
-    }
-    
-    // Adiciona texto bruto se existir (usado por infoGeral, imagem e como descrição)
-    if (conteudo.textoBruto && tipo !== 'credenciais' && tipo !== 'mapaRede' && tipo !== 'blocoCodigo') {
-         contentHtml += `<p>${conteudo.textoBruto.replace(/\n/g, '<br>')}</p>`;
-    }
-
-
-    switch(tipo) {
-        case 'credenciais':
-            if (conteudo.textoBruto) {
-                // Credenciais são apenas texto bruto formatado em bloco
-                contentHtml += `
-                    <div class="alert alert-warning credenciais-box">
-                        <strong>Credenciais:</strong>
-                        <pre>${conteudo.textoBruto}</pre>
-                    </div>`;
-            }
-            break;
-            
-        case 'mapaRede':
-        case 'blocoCodigo':
-            // Bloco de texto ou código (preserva espaços)
-            if (conteudo.textoBruto) {
-                contentHtml += `
-                    <div class="code-block">
-                        <pre>${conteudo.textoBruto}</pre>
-                    </div>`;
-            }
-            break;
-
-        case 'imagem':
-            if (conteudo.urlImagem) {
-                contentHtml += `
-                    <div class="text-center my-4">
-                        <img src="${conteudo.urlImagem}" alt="${conteudo.altImagem || 'Imagem da documentação'}" class="img-fluid" style="max-height: 400px; border: 1px solid #ccc;">
-                        <p class="text-muted mt-2">${conteudo.altImagem || 'Imagem'}</p>
-                    </div>
-                `;
-            }
-            break;
-
-        case 'infoGeral':
-            // Renderiza lista de detalhes
-            if (conteudo.detalhes && conteudo.detalhes.length > 0) {
-                contentHtml += '<ul class="list-unstyled">';
-                conteudo.detalhes.forEach(detalhe => {
-                    contentHtml += `<li><strong>${detalhe.rotulo}:</strong> ${detalhe.valor}</li>`;
-                });
-                contentHtml += '</ul>';
-            }
-            break;
-
-        default:
-            contentHtml += `<p class="text-danger">Tipo de conteúdo <strong>${tipo}</strong> sem renderização definida.</p>`;
-    }
-
-    return contentHtml;
-}
-
-/**
- * Renderiza recursivamente todas as seções e subseções (A CHAVE DO PROBLEMA ORIGINAL).
- * @param {Array} secoes - Array de objetos de seção.
- * @param {number} nivel - Nível de aninhamento (1 para H2, 2 para H3, etc.)
- * @returns {string} HTML renderizado.
- */
-function renderSecoes(secoes, nivel = 1) {
-    let html = '';
-    
-    // Tag de cabeçalho: H2 para nível 1, H3 para nível 2, etc.
-    const tag = `h${Math.min(nivel + 1, 6)}`; 
-    
-    secoes.forEach(secao => {
-        // 1. Título e Subtítulo
-        const tituloCompleto = secao.subtituloSecao 
-            ? `${secao.tituloSecao} <small class="text-muted">(${secao.subtituloSecao})</small>`
-            : secao.tituloSecao;
-            
-        html += `<${tag} class="mt-4 mb-3 text-break">${tituloCompleto}</${tag}>`;
-        html += '<hr class="mb-3">';
-
-        // 2. Conteúdo da Seção
-        if (secao.conteudo) {
-            html += renderConteudo(secao.tipoConteudo, secao.conteudo);
-        }
-
-        // 3. SEÇÕES ANINHADAS (RECUSÃO)
-        if (secao.secoesAninhadas && secao.secoesAninhadas.length > 0) {
-            // Chama a si mesma, aumentando o nível do cabeçalho
-            html += renderSecoes(secao.secoesAninhadas, nivel + 1); 
-        }
+    // Listener para o campo de pesquisa (input event para filtrar em tempo real)
+    searchInput.addEventListener('input', (e) => {
+        filterDocumentList(e.target.value);
     });
-    return html;
-}
+
+    // Listener para o botão de limpar pesquisa
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        filterDocumentList(''); // Re-renderiza a lista completa
+    });
+
+});
+
+// Tornar funções globais acessíveis a eventos inline no HTML gerado dinamicamente
+window.updateDetail = window.updateDetail;

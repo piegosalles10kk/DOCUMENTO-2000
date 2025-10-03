@@ -6,6 +6,9 @@
     <title><%= documentacao.tituloDocumento %></title>
     
     <style>
+        /* =======================================================
+           CONFIGURAÇÕES GERAIS E IMPRESSÃO (PDF)
+           ======================================================= */
         @page {
             size: A4;
             margin: 2cm;
@@ -22,7 +25,7 @@
             h1, h2, h3 {
                 page-break-after: avoid;
             }
-            .section {
+            .section, .content-block {
                 page-break-inside: avoid;
             }
         }
@@ -35,8 +38,8 @@
 
         body {
             font-family: 'Segoe UI', 'Arial', sans-serif;
-            line-height: 1.6;
-            color: #333;
+            line-height: 1.8;
+            color: #2c3e50;
             background: #fff;
             padding: 20px;
         }
@@ -47,59 +50,73 @@
             background: white;
         }
 
-        /* Cabeçalho do Documento */
+        /* --------------------- CABEÇALHO ---------------------- */
         .doc-header {
             background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
             color: white;
-            padding: 30px;
+            padding: 40px;
             border-radius: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .doc-header h1 {
-            font-size: 2.2em;
-            margin-bottom: 10px;
+            font-size: 2.5em;
+            margin-bottom: 15px;
             font-weight: 700;
+        }
+        
+        .doc-header p.doc-identificador {
+            font-size: 1.1em;
+            font-weight: 500;
+            margin-bottom: 0;
+            color: #ffffff;
         }
 
         .doc-info {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
-            margin-top: 15px;
-            font-size: 0.9em;
+            margin-top: 20px;
+            font-size: 0.95em;
         }
 
         .doc-badge {
             background: rgba(255,255,255,0.2);
-            padding: 8px 15px;
-            border-radius: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
             display: inline-block;
             margin: 5px;
         }
 
-        /* Índice */
+        /* ------------------------ ÍNDICE ------------------------ */
         .index {
             background: #f8f9fa;
-            padding: 25px;
-            border-left: 4px solid #0d6efd;
-            margin-bottom: 30px;
-            border-radius: 5px;
+            padding: 30px;
+            border-left: 5px solid #0d6efd;
+            margin-bottom: 40px;
+            border-radius: 8px;
         }
 
         .index h2 {
             color: #0d6efd;
-            margin-bottom: 15px;
-            font-size: 1.5em;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            align-items: center;
+        }
+        .index h2::before {
+             content: "📑 ";
         }
 
         .index ol {
-            padding-left: 25px;
+            padding-left: 30px;
         }
 
         .index li {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: #555;
         }
 
@@ -114,10 +131,10 @@
             text-decoration: underline;
         }
 
-        /* Seções */
+        /* ------------------------ SEÇÕES ------------------------ */
         .section {
-            margin-bottom: 40px;
-            padding-bottom: 20px;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
             border-bottom: 1px solid #e0e0e0;
         }
 
@@ -125,171 +142,210 @@
             border-bottom: none;
         }
 
+        /* TÍTULO DE SEÇÃO (H2) */
         h2 {
-            color: #0d6efd;
-            font-size: 1.8em;
-            margin-bottom: 15px;
+            color: #0d6efd; 
+            font-size: 2em;
+            margin-top: 40px; 
+            margin-bottom: 5px; 
             padding-bottom: 10px;
-            border-bottom: 3px solid #0d6efd;
+            border-bottom: 1px dashed #ced4da; /* Linha tracejada sutil */
             font-weight: 600;
         }
 
+        /* SUB-TÍTULO DE SEÇÃO (H3) */
         h3 {
-            color: #495057;
-            font-size: 1.4em;
+            color: #495057; 
+            font-size: 1.2em;
+            margin-top: 10px;
+            margin-bottom: 25px;
+            font-weight: 400; 
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ced4da; /* Linha tracejada sutil */
+        }
+
+        h4 {
+            color: #6c757d;
+            font-size: 1.3em;
             margin-top: 20px;
             margin-bottom: 10px;
             font-weight: 600;
         }
 
-        h4 {
-            color: #6c757d;
-            font-size: 1.2em;
+        /* Seções Aninhadas */
+        .nested-section {
+            margin-left: 30px;
+            padding-left: 30px;
+            border-left: 3px solid #e0e0e0;
+        }
+
+        /* Texto normal */
+        p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+            color: #2c3e50;
+        }
+        
+        /* ------------------ BLOCOS DE CONTEÚDO ------------------ */
+        .content-block {
+            margin-bottom: 30px; 
+            padding-top: 0;
+            border-top: none;
+        }
+        .content-block:first-child {
+            padding-top: 0;
+            border-top: none;
+        }
+
+        /* Título Opcional do Bloco (tituloBloco) */
+        .block-title-render {
+            color: #0d6efd; 
+            font-size: 1.4em;
             margin-top: 15px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #ced4da;
             font-weight: 600;
         }
 
-        /* Conteúdo - Info Geral */
+        /* Descrição Opcional do Bloco (descricaoBloco) */
+        .block-description {
+            font-size: 1.05em;
+            color: #495057;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        /* Correção para evitar que o bloco herde o H4 principal da seção */
+        .content-block h4 {
+            margin-top: 0;
+        }
+
+        /* Detalhes (info-list) */
         .info-list {
             background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .info-list ul { list-style: none; padding: 0; }
+        .info-list li { padding: 12px 0; border-bottom: 1px solid #dee2e6; font-size: 1.05em; }
+        .info-list li:last-child { border-bottom: none; }
+        .info-list strong { color: #0d6efd; display: inline-block; min-width: 200px; font-weight: 600; }
+
+        /* Texto Simples (textoBruto) */
+        .text-content {
+            background: #ffffff;
             padding: 20px;
-            border-radius: 8px;
-            margin: 15px 0;
+            border-left: 4px solid #6c757d;
+            margin: 20px 0;
+            line-height: 1.8;
+            color: #2c3e50;
+            font-size: 1.05em;
+            border: 1px solid #eee; 
+            border-radius: 5px;
         }
-
-        .info-list ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .info-list li {
-            padding: 8px 0;
-            border-bottom: 1px solid #dee2e6;
-        }
-
-        .info-list li:last-child {
-            border-bottom: none;
-        }
-
-        .info-list strong {
-            color: #0d6efd;
-            display: inline-block;
-            min-width: 180px;
-        }
-
+        
         /* Credenciais */
         .credentials {
             background: #fff3cd;
             border: 2px solid #ffc107;
             border-left: 5px solid #ffc107;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
         }
 
         .credentials::before {
-            content: "⚠️ CREDENCIAIS DE ACESSO";
+            content: "🔐 CREDENCIAIS DE ACESSO";
             display: block;
             font-weight: bold;
             color: #856404;
-            margin-bottom: 10px;
-            font-size: 1.1em;
+            margin-bottom: 15px;
+            font-size: 1.2em;
         }
 
-        .credentials pre {
+        .credentials .cred-content {
             background: white;
-            padding: 15px;
-            border-radius: 5px;
+            padding: 20px;
+            border-radius: 8px;
             border: 1px solid #ffc107;
             font-family: 'Courier New', monospace;
-            font-size: 0.95em;
-            line-height: 1.8;
+            font-size: 1em;
+            line-height: 2;
             color: #333;
-            overflow-x: auto;
+            white-space: pre-wrap;
         }
 
         /* Código/Mapa de Rede */
         .code-block {
             background: #2d2d2d;
             color: #f8f8f2;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0;
             border-left: 5px solid #0d6efd;
+            overflow-x: auto;
         }
 
         .code-block pre {
             font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 0.9em;
+            font-size: 0.95em;
             line-height: 1.6;
             overflow-x: auto;
-            white-space: pre;
+            white-space: pre-wrap;
+            margin: 0;
         }
 
         /* Imagens */
         .image-container {
             text-align: center;
-            margin: 30px 0;
-            padding: 20px;
+            margin: 35px 0;
+            padding: 25px;
             background: #f8f9fa;
-            border-radius: 8px;
+            border-radius: 10px;
         }
 
         .image-container img {
             max-width: 100%;
             height: auto;
             border: 2px solid #dee2e6;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .image-caption {
-            margin-top: 10px;
+            margin-top: 15px;
             font-style: italic;
             color: #6c757d;
-            font-size: 0.9em;
+            font-size: 1em;
         }
 
-        /* Texto Bruto */
-        .raw-text {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #6c757d;
-            margin: 15px 0;
-            line-height: 1.8;
-        }
-
-        /* Seções Aninhadas */
-        .nested-section {
-            margin-left: 20px;
-            padding-left: 20px;
-            border-left: 3px solid #e0e0e0;
-        }
-
-        /* Rodapé */
+        /* ------------------------- RODAPÉ ------------------------- */
         .doc-footer {
-            margin-top: 50px;
-            padding-top: 20px;
+            margin-top: 60px;
+            padding-top: 30px;
             border-top: 2px solid #dee2e6;
             text-align: center;
             color: #6c757d;
-            font-size: 0.9em;
+            font-size: 0.95em;
         }
 
         .footer-info {
             display: flex;
             justify-content: space-around;
             flex-wrap: wrap;
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
         .footer-info div {
             margin: 5px 15px;
         }
 
-        /* Botões de Ação */
+        /* --------------------- BOTÕES AÇÃO ---------------------- */
         .action-bar {
             position: fixed;
             top: 20px;
@@ -303,12 +359,13 @@
             background: #0d6efd;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.3s;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-weight: 600;
         }
 
         .btn:hover {
@@ -325,19 +382,15 @@
             background: #5a6268;
         }
 
-        /* Responsividade */
+        /* -------------------- RESPONSIVIDADE -------------------- */
         @media (max-width: 768px) {
-            .doc-header h1 {
-                font-size: 1.5em;
-            }
-            
-            .info-list strong {
-                min-width: 120px;
-            }
-
-            .nested-section {
-                margin-left: 10px;
-                padding-left: 10px;
+            .doc-header h1 { font-size: 1.8em; }
+            .info-list strong { min-width: 140px; }
+            .nested-section { margin-left: 15px; padding-left: 15px; }
+            .action-bar {
+                position: static;
+                justify-content: center;
+                margin-bottom: 20px;
             }
         }
     </style>
@@ -350,35 +403,31 @@
 </div>
 
 <div class="container">
-    <!-- Cabeçalho do Documento -->
     <div class="doc-header">
         <h1><%= documentacao.tituloDocumento %></h1>
+        <p class="doc-identificador">Identificador: <%= documentacao.identificador %></p>
         <div class="doc-info">
             <div class="doc-badge">
-                📋 ID: <%= documentacao.identificador %>
+                📅 Criação: <%= new Date(documentacao.createdAt || documentacao.ultimaAtualizacao).toLocaleDateString('pt-BR') %>
             </div>
             <div class="doc-badge">
-                📅 <%= new Date(documentacao.ultimaAtualizacao).toLocaleDateString('pt-BR') %>
-            </div>
-            <div class="doc-badge">
-                🏢 Infinitibank
+                ✍️ Atualização: <%= new Date(documentacao.ultimaAtualizacao).toLocaleDateString('pt-BR') %>
             </div>
         </div>
     </div>
 
-    <!-- Índice -->
     <% const secoes = documentacao.secoes || []; %>
     <% if (secoes.length > 0) { %>
     <div class="index">
-        <h2>📑 Índice</h2>
+        <h2>Índice</h2>
         <ol>
             <% secoes.forEach((s, i) => { %>
                 <li>
-                    <a href="#section-<%= i %>"><%= s.tituloSecao %></a>
+                    <a href="#section-<%= i %>"><%= (i + 1) %>. <%= s.tituloSecao %></a>
                     <% if (s.secoesAninhadas && s.secoesAninhadas.length > 0) { %>
-                        <ol style="margin-top: 5px;">
+                        <ol style="margin-top: 8px;">
                             <% s.secoesAninhadas.forEach((sub, j) => { %>
-                                <li><a href="#section-<%= i %>-<%= j %>"><%= sub.tituloSecao %></a></li>
+                                <li><a href="#section-<%= i %>-<%= j %>"><%= (i + 1) %>.<%= (j + 1) %>. <%= sub.tituloSecao %></a></li>
                             <% }); %>
                         </ol>
                     <% } %>
@@ -388,7 +437,6 @@
     </div>
     <% } %>
 
-    <!-- Conteúdo Principal -->
     <% if (secoes.length > 0) { %>
         <% secoes.forEach((s, i) => { %>
             <div class="section" id="section-<%= i %>">
@@ -397,29 +445,38 @@
                 <% if (s.subtituloSecao) { %>
                     <h3><%= s.subtituloSecao %></h3>
                 <% } %>
+                
+                <% const blocosPrincipais = s.blocos || []; %>
+                <% blocosPrincipais.forEach(bloco => { %>
+                    <%- renderConteudo(bloco) %>
+                <% }); %>
 
-                <%- renderConteudo(s.tipoConteudo, s.conteudo) %>
-
-                <!-- Seções Aninhadas -->
                 <% if (s.secoesAninhadas && s.secoesAninhadas.length > 0) { %>
                     <div class="nested-section">
                         <% s.secoesAninhadas.forEach((sub, j) => { %>
-                            <div id="section-<%= i %>-<%= j %>" style="margin-top: 25px;">
+                            <div id="section-<%= i %>-<%= j %>" style="margin-top: 30px;">
                                 <h3><%= i + 1 %>.<%= j + 1 %>. <%= sub.tituloSecao %></h3>
                                 
                                 <% if (sub.subtituloSecao) { %>
                                     <h4><%= sub.subtituloSecao %></h4>
                                 <% } %>
 
-                                <%- renderConteudo(sub.tipoConteudo, sub.conteudo) %>
+                                <% const subBlocos = sub.blocos || []; %>
+                                <% subBlocos.forEach(bloco => { %>
+                                    <%- renderConteudo(bloco) %>
+                                <% }); %>
 
-                                <!-- Mais níveis aninhados (recursivo) -->
                                 <% if (sub.secoesAninhadas && sub.secoesAninhadas.length > 0) { %>
                                     <div class="nested-section">
                                         <% sub.secoesAninhadas.forEach((subsub, k) => { %>
-                                            <div style="margin-top: 20px;">
+                                            <div style="margin-top: 25px;">
                                                 <h4><%= i + 1 %>.<%= j + 1 %>.<%= k + 1 %>. <%= subsub.tituloSecao %></h4>
-                                                <%- renderConteudo(subsub.tipoConteudo, subsub.conteudo) %>
+                                                
+                                                <% const subSubBlocos = subsub.blocos || []; %>
+                                                <% subSubBlocos.forEach(bloco => { %>
+                                                    <%- renderConteudo(bloco) %>
+                                                <% }); %>
+                                                
                                             </div>
                                         <% }); %>
                                     </div>
@@ -432,15 +489,14 @@
         <% }); %>
     <% } else { %>
         <div class="section">
-            <p style="text-align: center; color: #6c757d; padding: 40px;">
+            <p style="text-align: center; color: #6c757d; padding: 60px; font-size: 1.2em;">
                 ℹ️ Este documento não possui seções cadastradas.
             </p>
         </div>
     <% } %>
 
-    <!-- Rodapé -->
     <div class="doc-footer">
-        <strong>Documentação Técnica - Infinitibank</strong>
+        <strong>Documentação Técnica - <%= documentacao.identificador %></strong>
         <div class="footer-info">
             <div>
                 <strong>Identificador:</strong> <%= documentacao.identificador %>
@@ -457,20 +513,43 @@
 </div>
 
 <%
-// Função auxiliar para renderizar conteúdo
-function renderConteudo(tipo, conteudo) {
-    if (!conteudo) return '';
+// Função auxiliar para renderizar conteúdo do Bloco (Credenciais/Detalhes Corrigidos)
+function renderConteudo(bloco) {
+    if (!bloco || !bloco.tipoBloco) return '';
     
-    let html = '';
+    const tipo = bloco.tipoBloco;
+    let html = '<div class="content-block">';
     
+    // Auxiliar para tratar quebras de linha em textos simples
+    const formatarTextoBruto = (texto) => {
+        if (!texto) return '';
+        const linhas = texto.split('\n').filter(line => line.trim() !== '');
+        return linhas.map(line => `<p>${line.trim()}</p>`).join('');
+    };
+
+    // 1. Título e Descrição do Bloco
+    if (bloco.tituloBloco) {
+        html += `<h4 class="block-title-render">${bloco.tituloBloco}</h4>`;
+    }
+    if (bloco.descricaoBloco) {
+        html += `<p class="block-description">${bloco.descricaoBloco.replace(/\n/g, '<br>')}</p>`;
+    }
+
+    // 2. Conteúdo Principal do Bloco
     switch(tipo) {
-        case 'infoGeral':
-            if (conteudo.textoBruto) {
-                html += `<div class="raw-text">${conteudo.textoBruto.replace(/\n/g, '<br>')}</div>`;
+        case 'textoBruto':
+            if (bloco.valorBruto) {
+                html += `<div class="text-content">${formatarTextoBruto(bloco.valorBruto)}</div>`;
             }
-            if (conteudo.detalhes && conteudo.detalhes.length > 0) {
+            break;
+            
+        case 'detalhes':
+            if (bloco.valorBruto) {
+                html += formatarTextoBruto(bloco.valorBruto);
+            }
+            if (bloco.detalhes && bloco.detalhes.length > 0) {
                 html += '<div class="info-list"><ul>';
-                conteudo.detalhes.forEach(d => {
+                bloco.detalhes.forEach(d => {
                     html += `<li><strong>${d.rotulo}:</strong> ${d.valor}</li>`;
                 });
                 html += '</ul></div>';
@@ -478,41 +557,62 @@ function renderConteudo(tipo, conteudo) {
             break;
             
         case 'credenciais':
-            html += '<div class="credentials">';
-            if (conteudo.textoBruto) {
-                html += `<pre>${conteudo.textoBruto}</pre>`;
-            } else if (conteudo.detalhes && conteudo.detalhes.length > 0) {
-                html += '<pre>';
-                conteudo.detalhes.forEach(d => {
-                    html += `${d.rotulo}: ${d.valor}\n`;
-                });
-                html += '</pre>';
+            // Verifica se há detalhes (Rótulo: Valor) OU se há texto bruto
+            if (bloco.detalhes && bloco.detalhes.length > 0 || bloco.valorBruto) {
+                 
+                html += '<div class="credentials">';
+                html += '<div class="cred-content">';
+
+                // PRIORIZA DETALHES (Login/Senha em formato tabular)
+                if (bloco.detalhes && bloco.detalhes.length > 0) {
+                    let credHtml = '';
+                    bloco.detalhes.forEach(d => {
+                        // Formata como Rótulo: Valor, adicionando quebra de linha para o 'pre-wrap'
+                        credHtml += `${d.rotulo}: ${d.valor}\n`; 
+                    });
+                    html += credHtml;
+                } 
+                // FALLBACK para valorBruto (texto livre)
+                else if (bloco.valorBruto) {
+                    html += bloco.valorBruto;
+                }
+
+                html += '</div>'; /* Fecha cred-content */
+                html += '</div>'; /* Fecha credentials */
             }
-            html += '</div>';
             break;
             
         case 'mapaRede':
         case 'blocoCodigo':
-            html += '<div class="code-block">';
-            html += `<pre>${conteudo.textoBruto || 'Nenhum conteúdo fornecido.'}</pre>`;
-            html += '</div>';
+            if (bloco.valorBruto) {
+                html += '<div class="code-block">';
+                html += `<pre>${bloco.valorBruto}</pre>`;
+                html += '</div>';
+            }
             break;
             
         case 'imagem':
-            if (conteudo.urlImagem) {
+            if (bloco.urlImagem) {
                 html += '<div class="image-container">';
-                html += `<img src="${conteudo.urlImagem}" alt="${conteudo.altImagem || 'Imagem'}">`;
-                if (conteudo.altImagem) {
-                    html += `<div class="image-caption">${conteudo.altImagem}</div>`;
+                html += `<img src="${bloco.urlImagem}" alt="${bloco.altImagem || 'Imagem da Seção'}">`;
+                if (bloco.altImagem) {
+                    html += `<div class="image-caption">${bloco.altImagem}</div>`;
                 }
                 html += '</div>';
             }
-            if (conteudo.textoBruto) {
-                html += `<div class="raw-text">${conteudo.textoBruto.replace(/\n/g, '<br>')}</div>`;
+            if (bloco.valorBruto) {
+                html += formatarTextoBruto(bloco.valorBruto);
+            }
+            break;
+            
+        default:
+            if (bloco.valorBruto) {
+                html += `<p>Conteúdo de tipo desconhecido (${tipo}):</p><pre>${bloco.valorBruto}</pre>`;
             }
             break;
     }
     
+    html += '</div>';
     return html;
 }
 %>

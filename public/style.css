@@ -1,185 +1,230 @@
-/* ==========================================================
-   ESTILOS GLOBAIS
-   ========================================================== */
+/* Estilos globais e de layout para replicar o design do React/Tailwind */
+
+/* ========================================================== */
+/* 1. LAYOUT GERAL E HEADERS */
+/* ========================================================== */
+
+/* Fundo da Página (Replicando o gradiente from-blue-50 to-indigo-100) */
 body {
-    font-family: 'Arial', 'Helvetica', sans-serif;
-    line-height: 1.6;
-    color: #333;
-    /* Adicionando um fundo levemente cinza ao corpo fora do container principal */
-    background-color: #f4f4f9; 
+    background-color: #f7f9fc; /* Cor de fallback */
+    background-image: linear-gradient(to bottom right, #eff6ff, #e0e7ff);
+    min-height: 100vh;
 }
 
-/* Título principal do Gerenciador */
-h1 {
-    font-weight: 700;
-    color: #007bff;
+/* Estilos do Header (Replicando o gradiente from-blue-600 to-indigo-600) */
+.card-header.bg-primary {
+    background: linear-gradient(to right, #2563eb, #4f46e5) !important;
+    border-bottom: none;
+    /* Suaviza as bordas internas do cabeçalho */
+    border-radius: 0.5rem 0.5rem 0 0 !important; 
+}
+.card-header h1 {
+    font-weight: 600 !important; /* Mais destaque para o título principal */
 }
 
-/* ==========================================================
-   ESTILOS DA INTERFACE CRUD (Bootstrap overrides)
-   ========================================================== */
+/* ========================================================== */
+/* 2. NAVEGAÇÃO DE ABAS (TABS) */
+/* ========================================================== */
 
-/* Ajuste para o formulário de edição modular */
-#document-form-container {
-    background-color: #ffffff;
-    border: 1px solid #dee2e6 !important;
-    border-radius: 0.5rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+/* Estilo da Aba Padrão */
+.nav-tabs .nav-link {
+    color: #6c757d; /* Cor padrão para abas inativas */
+    border: none;
+    padding-bottom: 0.75rem;
+    padding-top: 0.75rem;
+    transition: all 0.2s ease;
 }
 
-/* Estilo para cada item de seção no formulário (melhora a visualização do drag-and-drop) */
-.section-item { 
-    /* Manter a borda e padding para demarcar o bloco */
-    border: 1px solid #ccc;
-    margin-bottom: 15px;
-    padding: 15px;
-    border-radius: 4px;
-    background-color: #fcfcfc;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+/* Estilo da Aba Ativa (Replicando border-b-2 border-blue-600) */
+.nav-tabs .nav-link.active {
+    color: #2563eb; /* Cor do texto azul */
+    border-bottom: 2px solid #2563eb; /* Borda inferior azul */
+    background-color: transparent;
+    font-weight: 500;
 }
 
-/* Cursor para o manipulador de arrastar */
-.drag-handle { 
-    cursor: grab; 
-    font-size: 1.25rem;
-    padding: 0 8px;
-    color: #888;
-}
-.drag-handle:active {
-    cursor: grabbing;
-}
+/* ========================================================== */
+/* 3. ESTILOS DO EDITOR MODULAR (SECTIONS & BLOCKS) */
+/* ========================================================== */
 
-/* Estilo para a linha de detalhe (Rótulo: Valor) */
-.detail-row input {
-    font-size: 0.9rem;
-}
-
-/* JSON Aninhado no Formulário */
-.section-nested-json {
-    font-size: 0.85em;
-    font-family: 'Consolas', 'Courier New', monospace;
-    background-color: #f3f4f6;
+/* Estilo do Contêiner da Seção (Principal) */
+.section-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem; /* rounded-lg */
+    margin-bottom: 1.5rem; 
+    /* Manter 'overflow: hidden' aqui é o que causa o problema. Vamos forçar 'visible' */
+    overflow: visible !important; 
+    /* Sombra mais pronunciada para destacar o grupo */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
 }
 
-/* ==========================================================
-   ESTILOS DE RENDERIZAÇÃO DO DOCUMENTO (Visualização)
-   ========================================================== */
-
-/* O ID doc-content é onde o JS injeta o HTML. O document-render é o pai dele. */
-#document-render {
-    background-color: #ffffff;
-    padding: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+/* Estilo do cabeçalho da seção */
+.section-item > .d-flex {
+    background-color: #f8f9fa; /* Fundo claro para metadados */
+    color: #212529;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 500;
 }
 
-
-/* Títulos do Documento Renderizado */
-#doc-content h1 {
-    color: #1a1a1a;
-    border-bottom: 4px solid #343a40; 
-    padding-bottom: 10px;
-    margin-top: 0;
-    font-size: 2.2em;
-    font-weight: 700;
+.section-item .section-title {
+    color: #2563eb; /* Cor primária para o título da seção */
 }
 
-#doc-content h2 { /* Nível 1 de Seção */
-    color: #343a40;
-    border-bottom: 1px solid #ccc;
-    padding-bottom: 5px;
-    margin-top: 35px;
-    font-size: 1.8em;
+/* Estilo do Contêiner do Bloco (Módulo Interno) */
+.block-item {
+    background-color: #ffffff; 
+    border: 1px dashed #ced4da; /* Borda tracejada */
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.3rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.block-title-badge {
+    font-size: 0.75rem;
     font-weight: 600;
 }
 
-#doc-content h3 { /* Nível 2 de Seção */
-    color: #007bff; 
-    margin-top: 25px;
-    margin-bottom: 10px;
-    font-size: 1.5em;
-    font-weight: 500;
+/* Inputs de Detalhes */
+.detail-row .form-control-sm {
+    font-size: 0.875rem; /* text-sm */
 }
 
-#doc-content h4, #doc-content h5, #doc-content h6 { /* Níveis 3+ */
-    color: #555; 
-    margin-top: 15px;
-    margin-bottom: 8px;
-    font-size: 1.2em;
-    font-weight: 500;
+.detail-row .btn-outline-danger {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
 }
 
-/* Listas (infoGeral) */
-#doc-content ul { 
-    list-style: none; 
-    padding-left: 0; 
-    margin-top: 10px;
-}
-#doc-content ul li {
-    margin-bottom: 5px;
-}
-#doc-content ul li::before { 
-    content: "•"; 
-    color: #17a2b8; 
-    font-weight: bold; 
-    display: inline-block; 
-    width: 1em; 
-    margin-left: -1em; 
+/* Campo de texto de código/credenciais (font-mono) */
+.font-monospace {
+    font-family: 'Consolas', 'Monaco', monospace;
 }
 
-/* Imagens */
-#doc-content img { 
-    max-width: 100%; 
-    height: auto; 
-    display: block; 
-    margin: 25px auto; /* Centraliza a imagem */
-    border: 1px solid #e9ecef; 
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+/* Estilo para o manipulador de arrastar (drag-handle) */
+.drag-handle {
+    cursor: grab;
+    opacity: 0.7;
+    transition: opacity 0.2s;
 }
 
-/* Bloco de Código e Mapa de Rede */
-.code-block {
-    font-family: 'Consolas', 'Courier New', monospace;
-    font-size: 0.95em;
-    background-color: #272822; /* Fundo escuro */
-    color: #f8f8f2; /* Texto claro */
-    border: 1px solid #333;
-    padding: 15px;
-    border-radius: 4px;
-    margin: 15px 0;
-    overflow-x: auto; 
+.drag-handle:active {
+    cursor: grabbing;
+    opacity: 1;
 }
 
-.code-block pre {
-    margin: 0;
-    white-space: pre-wrap;
-    word-break: break-all;
+/* ---------------------------------------------------------- */
+/* CORREÇÃO CRÍTICA DO Z-INDEX PARA DROPDOWN DE BLOCOS */
+/* ---------------------------------------------------------- */
+
+/* 1. Garante que o contêiner do dropdown seja visível (herda do .section-item agora, mas esta é a camada) */
+.section-item .dropdown {
+    overflow: visible !important;
 }
 
-/* Caixa de Credenciais (Destaque) */
-/* CLASSE USADA NO SCRIPT.JS: .credenciais-box */
-.credenciais-box {
-    background-color: #fff3cd; /* Amarelo muito claro (Bootstrap .alert-warning) */
-    border: 1px solid #ffeeba; 
-    padding: 20px;
-    margin: 20px 0;
-    border-radius: 6px;
-    color: #856404; /* Texto escuro para contraste */
-}
-.credenciais-box pre { 
-    background-color: #ffffff; 
-    border: 1px solid #f9e993; 
-    padding: 10px;
-    margin-top: 10px;
-    color: #333; /* Força o texto dentro do pre a ser escuro */
+/* 2. Aplica um z-index extremamente alto no menu real para que ele flutue acima de TUDO */
+.section-item .dropdown-menu {
+    z-index: 9999 !important; 
+    position: absolute; /* Garantir que o posicionamento absoluto funcione corretamente */
 }
 
-/* Rodapé de Atualização */
-.update-info { /* CLASSE USADA NO SCRIPT.JS */
-    margin-top: 50px;
-    padding-top: 15px;
-    border-top: 1px solid #dee2e6;
-    color: #6c757d; 
-    font-size: 0.85em;
-    text-align: right;
+
+/* ========================================================== */
+/* 4. ESTILOS DA LISTA DE DOCUMENTOS */
+/* ========================================================== */
+
+.document-item {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.document-item .card-body {
+    transition: background-color 0.2s;
+    border-radius: 0.3rem;
+}
+
+.document-item:hover {
+    /* Leve elevação e sombra ao passar o mouse */
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); 
+}
+
+.document-item .card-body:hover {
+    background-color: #f0f4ff; /* Fundo levemente azulado ao passar o mouse */
+}
+
+.document-item .card-title {
+    color: #1f2937; /* Cor de texto mais escura para o título */
+    font-weight: 600;
+}
+
+.document-item .card-subtitle {
+    font-size: 0.875rem;
+}
+
+/* ========================================================== */
+/* 5. ESTILOS DA BARRA DE PESQUISA (NOVO E MELHORADO) */
+/* ========================================================== */
+
+/* Contêiner Principal da Barra de Pesquisa */
+.input-group.search-bar {
+    /* Visual de campo de formulário mais suave e limpo */
+    border: 1px solid #e5e7eb; /* Cor de borda clara (gray-200) */
+    border-radius: 0.5rem; /* rounded-lg */
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+    
+    /* Remove a sombra externa, mantendo a borda suave */
+    box-shadow: none; 
+}
+
+/* Efeito de Foco Estilo Tailwind: Borda azul no contêiner inteiro */
+.input-group.search-bar:focus-within {
+    border-color: #3b82f6; /* Cor primária do foco (blue-500) */
+    box-shadow: 0 0 0 1px #3b82f6; /* Anel de foco sutil */
+}
+
+/* Estilo do Campo de Input */
+#search-input {
+    /* Remove estilos nativos para integrar perfeitamente ao contêiner */
+    border: none;
+    box-shadow: none;
+    padding-left: 0.75rem; /* Ajuste o padding para ser mais equilibrado */
+    background-color: transparent; /* Garante que o fundo do input não sobreponha */
+}
+
+/* Remove a borda/anel de foco padrão do input para usar o do contêiner */
+#search-input:focus {
+    box-shadow: none !important;
+    border-color: transparent !important;
+}
+
+/* Estilo dos Ícones/Botões (Lupa e Limpar) */
+.btn-search-icon, #clear-search-btn {
+    border: none;
+    background-color: transparent; /* Ícone com fundo transparente */
+    color: #9ca3af; /* Cor do ícone mais suave (gray-400) */
+    opacity: 0.8;
+    padding: 0.5rem 0.75rem;
+}
+
+#clear-search-btn:hover {
+    color: #4b5563; /* Ícone mais escuro ao passar o mouse (gray-600) */
+}
+
+#clear-search-btn {
+    display: none; /* Mantém o controle via JS */
+}
+
+/* ========================================================== */
+/* 6. ESTILOS DE MENSAGENS DE ESTADO */
+/* ========================================================== */
+
+/* Estilo para o container de mensagens vazias */
+#empty-list-message, #empty-sections-message {
+    border: 2px dashed #b5c7e0 !important; /* Borda tracejada azul claro */
+    background-color: #f5f8fc !important; /* Fundo bem claro */
+    border-radius: 0.5rem;
+}
+
+#empty-list-message p.h5, #empty-sections-message p.text-muted {
+    color: #4a5568 !important; /* Cor de texto suave */
 }
