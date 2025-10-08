@@ -35,9 +35,9 @@ router.put('/auth/update-password-recovery', updatePasswordRecovery);
 // ==========================================
 
 // CRUD de usuários
-router.get('/users', checkToken, getAllUsers);
-router.get('/users/:id', checkToken, getUser);
-router.put('/users/:id', checkToken, updateUser);
-router.delete('/users/:id', checkToken, deleteUser);
+router.get('/', checkToken, getAllUsers);
+router.get('/:id', checkToken, getUser);
+router.put('/:id', checkToken, updateUser);
+router.delete('/:id', checkToken, deleteUser);
 
 module.exports = router;

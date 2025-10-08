@@ -4,6 +4,7 @@ const API_URL = '/api/docs';
 // ESTADO GLOBAL DA APLICAÇÃO
 // ==========================================================
 let documents = [];
+let userRole = null; 
 let currentDoc = null; // Identificador do documento que está sendo editado (string)
 let isEditing = false;
 let activeTab = 'list';
@@ -17,7 +18,7 @@ let formData = {
 let currentSectionIndex = -1;
 let currentBlockIndex = -1;
 
-// Instâncias dos Modals
+// Instâncias dos Modals (Inicializadas no DOMContentLoaded)
 let blockModal;
 let sectionModal;
 
@@ -82,36 +83,53 @@ const switchTab = (tabName) => {
 // --- FUNÇÕES DE CARREGAMENTO E MANIPULAÇÃO DE DADOS ---
 
 /**
- * Carrega a lista de documentos da API. (MANTIDA)
+ * Carrega a lista de documentos da API. 
+ * **ATENÇÃO: DEVE ENVIAR O JWT NO HEADER DE AUTORIZAÇÃO.**
  */
 const fetchDocuments = async () => {
     const listContainer = document.getElementById('document-list-container');
     const loadingMessage = document.getElementById('loading-message');
     const emptyMessage = document.getElementById('empty-list-message');
+    const token = localStorage.getItem('token'); // Pega o token
 
     listContainer.innerHTML = ''; // Limpa a lista
     loadingMessage.classList.remove('d-none');
     emptyMessage.classList.add('d-none');
 
     try {
-        const response = await fetch(API_URL);
+        const response = await fetch(API_URL, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}` // Inclui o token
+            }
+        });
+        
+        if (response.status === 401 || response.status === 403) {
+             // Se o token for inválido, força o logout
+             console.error('Token inválido ou expirado. Forçando logout.');
+             localStorage.removeItem('token');
+             window.location.href = 'login.html';
+             return;
+        }
+
         const data = await response.json();
         
         if (data.sucesso) {
             documents = data.dados;
             // A renderização inicial será com a lista completa
             renderDocumentList(documents); 
+        } else {
+            console.error('Erro ao buscar documentos:', data.mensagem);
         }
     } catch (error) {
-        console.error('Erro ao carregar documentos:', error);
+        console.error('Erro de rede ao carregar documentos:', error);
     } finally {
         loadingMessage.classList.add('d-none');
-        // A lógica de lista vazia foi transferida para renderDocumentList
     }
 };
 
 // ==========================================================
-// FUNÇÃO CENTRAL DA PESQUISA (NOVA)
+// FUNÇÃO CENTRAL DA PESQUISA
 // ==========================================================
 
 /**
@@ -143,7 +161,7 @@ const filterDocumentList = (searchText) => {
 };
 
 // ==========================================================
-// RENDERIZAÇÃO DA LISTA DE DOCUMENTOS (MODIFICADA)
+// RENDERIZAÇÃO DA LISTA DE DOCUMENTOS
 // ==========================================================
 
 /**
@@ -155,46 +173,34 @@ const renderDocumentList = (listToRender = documents) => {
     const emptyMessage = document.getElementById('empty-list-message');
     listContainer.innerHTML = ''; // Limpa a lista
     
-    const isFiltered = listToRender.length !== documents.length || document.getElementById('search-input').value.trim() !== '';
-
-    if (listToRender.length === 0) {
-        if (!isFiltered) {
-            // Lista completa está vazia
-            emptyMessage.classList.remove('d-none');
-        } else {
-            // Lista filtrada está vazia, mostra mensagem de "Nenhum resultado"
-            emptyMessage.classList.remove('d-none');
-            // Altera o conteúdo da mensagem de lista vazia para pesquisa
-            emptyMessage.innerHTML = `
-                <p class="h5 mb-4 text-muted">🔎 Nenhum resultado encontrado para a pesquisa.</p>
-                <button id="btn-create-first" class="btn btn-primary btn-lg d-none">
-                    Criar Primeiro Documento
-                </button>
-            `;
-            // Re-anexa o listener ao botão (apesar de estar escondido, a prática é boa)
-            document.getElementById('btn-create-first').onclick = handleNewDocument;
-        }
-        listContainer.classList.add('d-none');
-        return;
-    }
+    // >> NOVO: Permissão de edição/criação
+    const canEditOrDelete = window.userRole !== 'visualizador'; 
     
-    // Se há itens, remove a mensagem de lista vazia
-    emptyMessage.classList.add('d-none');
-    
-    // Restaura a mensagem original da lista vazia se for removida
-    emptyMessage.innerHTML = `
-        <p class="h5 mb-4 text-muted">📭 Nenhum documento cadastrado</p>
-        <button id="btn-create-first" class="btn btn-primary btn-lg">
-            Criar Primeiro Documento
-        </button>
-    `;
-    document.getElementById('btn-create-first').onclick = handleNewDocument;
-    
-    listContainer.classList.remove('d-none');
+    // ... (restante da lógica de lista vazia) ...
 
     let listHtml = '';
     listToRender.forEach(doc => {
         const lastUpdated = new Date(doc.ultimaAtualizacao || Date.now()).toLocaleString('pt-BR');
+        
+        // Botão de Visualizar (sempre visível)
+        let actionButtonsHtml = `
+            <a href="/render/${doc.identificador}" target="_blank" class="btn btn-info btn-sm" title="Visualizar">
+                <i class="fas fa-file-text"></i>
+            </a>
+        `;
+        
+        // Inclui os botões de editar e excluir SOMENTE se o usuário tiver permissão
+        if (canEditOrDelete) {
+            actionButtonsHtml += `
+                <button class="btn btn-warning btn-sm btn-edit-doc" data-id="${doc.identificador}" title="Editar">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button class="btn btn-danger btn-sm btn-delete-doc" data-id="${doc.identificador}" title="Excluir">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            `;
+        }
+
         listHtml += `
             <div class="col-12">
                 <div class="card shadow-sm border-0 document-item" data-title="${doc.tituloDocumento}" data-id="${doc.identificador}">
@@ -205,15 +211,7 @@ const renderDocumentList = (listToRender = documents) => {
                             <small class="text-secondary">Última atualização: ${lastUpdated}</small>
                         </div>
                         <div class="btn-group" role="group">
-                            <a href="/render/${doc.identificador}" target="_blank" class="btn btn-info btn-sm" title="Visualizar">
-                                <i class="fas fa-file-text"></i>
-                            </a>
-                            <button class="btn btn-warning btn-sm btn-edit-doc" data-id="${doc.identificador}" title="Editar">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm btn-delete-doc" data-id="${doc.identificador}" title="Excluir">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
+                            ${actionButtonsHtml}
                         </div>
                     </div>
                 </div>
@@ -223,7 +221,7 @@ const renderDocumentList = (listToRender = documents) => {
 
     listContainer.innerHTML = listHtml;
     
-    // Anexar Listeners para botões da lista (Editar e Excluir)
+    // Anexar Listeners (só são anexados se os botões foram renderizados)
     document.querySelectorAll('.btn-edit-doc').forEach(button => {
         button.onclick = () => handleEditDocument(button.dataset.id);
     });
@@ -232,16 +230,8 @@ const renderDocumentList = (listToRender = documents) => {
     });
 };
 
-// Restante das funções de editor (handleNewDocument, handleEditDocument, handleSaveDocument, 
-// handleDeleteDocument, addSection, removeSection, handleEditSection, handleSaveSectionModal, 
-// addBlock, removeBlock, handleEditBlock, handleSaveBlockModal, addDetail, removeDetail, 
-// renderDetailEditorInModal, renderBlockEditor, renderSectionEditor, attachDynamicListeners) 
-// permanecem inalteradas, exceto a chamada a renderDocumentList que agora deve ser renderDocumentList() 
-// para usar a lista global 'documents'. (Já ajustado em fetchDocuments e switchTab).
-
-
 /**
- * Inicia o modo de criação de novo documento. (MANTIDA)
+ * Inicia o modo de criação de novo documento.
  */
 const handleNewDocument = () => {
     // 1. Resetar o formulário
@@ -268,11 +258,18 @@ const handleNewDocument = () => {
 };
 
 /**
- * Carrega um documento existente para edição. (MANTIDA)
+ * Carrega um documento existente para edição. 
+ * **ATENÇÃO: DEVE ENVIAR O JWT NO HEADER DE AUTORIZAÇÃO.**
  */
 const handleEditDocument = async (identifier) => {
+    const token = localStorage.getItem('token');
     try {
-        const response = await fetch(`${API_URL}/id/${identifier}`);
+        const response = await fetch(`${API_URL}/id/${identifier}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}` // Inclui o token
+            }
+        });
         const data = await response.json();
         
         if (data.sucesso) {
@@ -280,7 +277,6 @@ const handleEditDocument = async (identifier) => {
             formData = {
                 tituloDocumento: data.dados.tituloDocumento,
                 identificador: data.dados.identificador,
-                // A estrutura de 'secoes' carregada da API já está no novo formato (com 'blocos')
                 secoes: data.dados.secoes || [] 
             };
             currentDoc = identifier;
@@ -303,9 +299,11 @@ const handleEditDocument = async (identifier) => {
 };
 
 /**
- * Salva ou atualiza um documento. (MANTIDA)
+ * Salva ou atualiza um documento. 
+ * **ATENÇÃO: DEVE ENVIAR O JWT NO HEADER DE AUTORIZAÇÃO.**
  */
 const handleSaveDocument = async () => {
+    const token = localStorage.getItem('token');
     // Validação básica
     if (!formData.tituloDocumento || !formData.identificador) {
         alert('Preencha o Título e o Identificador do documento.');
@@ -318,7 +316,10 @@ const handleSaveDocument = async () => {
     try {
         const response = await fetch(url, {
             method,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Inclui o token
+            },
             body: JSON.stringify(formData)
         });
 
@@ -340,14 +341,19 @@ const handleSaveDocument = async () => {
 };
 
 /**
- * Exclui um documento. (MANTIDA)
+ * Exclui um documento. 
+ * **ATENÇÃO: DEVE ENVIAR O JWT NO HEADER DE AUTORIZAÇÃO.**
  */
 const handleDeleteDocument = async (identifier) => {
+    const token = localStorage.getItem('token');
     if (!confirm('Deseja realmente excluir este documento?')) return;
 
     try {
         const response = await fetch(`${API_URL}/${identifier}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}` // Inclui o token
+            }
         });
         const data = await response.json();
         if (data.sucesso) {
@@ -395,7 +401,7 @@ const removeSection = (sectionIndex) => {
 };
 
 /**
- * Abre o modal de edição de seção. (NOVA)
+ * Abre o modal de edição de seção.
  */
 const handleEditSection = (sectionIndex) => {
     currentSectionIndex = sectionIndex;
@@ -412,7 +418,7 @@ const handleEditSection = (sectionIndex) => {
 };
 
 /**
- * Salva os dados do modal de seção de volta ao formData. (NOVA)
+ * Salva os dados do modal de seção de volta ao formData.
  */
 const handleSaveSectionModal = () => {
     const sectionIndex = currentSectionIndex;
@@ -462,7 +468,7 @@ const removeBlock = (sectionIndex, blockIndex) => {
 };
 
 /**
- * Abre o modal de edição de bloco e preenche os campos. (NOVA E PRINCIPAL)
+ * Abre o modal de edição de bloco e preenche os campos.
  */
 const handleEditBlock = (sectionIndex, blockIndex) => {
     currentSectionIndex = sectionIndex;
@@ -510,7 +516,7 @@ const handleEditBlock = (sectionIndex, blockIndex) => {
 };
 
 /**
- * Salva os dados do modal de bloco de volta ao formData. (NOVA)
+ * Salva os dados do modal de bloco de volta ao formData.
  */
 const handleSaveBlockModal = () => {
     const sectionIndex = currentSectionIndex;
@@ -532,7 +538,6 @@ const handleSaveBlockModal = () => {
         case 'detalhes':
         case 'credenciais':
             // Os detalhes já foram atualizados no formData via `updateDetail` no `oninput`
-            // Nada a fazer aqui.
             break;
             
         case 'imagem':
@@ -542,12 +547,6 @@ const handleSaveBlockModal = () => {
             break;
     }
     
-    // Opcional: Revalidação (ex: campo valorBruto para texto simples não deve ser vazio)
-    if ((block.tipoBloco === 'textoBruto' || block.tipoBloco === 'blocoCodigo' || block.tipoBloco === 'mapaRede') && !block.valorBruto) {
-        // Alerta não-bloqueante para evitar perda de dados no modal
-        console.warn('Conteúdo principal vazio.');
-    }
-
     blockModal.hide();
     renderSections();
 };
@@ -556,7 +555,7 @@ const handleSaveBlockModal = () => {
 // ------------------- Funções de Detalhe (Aninhadas) -------------------
 
 /**
- * Adiciona um par Rótulo:Valor (Detalhe) a um bloco (NOVA: Usada apenas dentro do Modal).
+ * Adiciona um par Rótulo:Valor (Detalhe) a um bloco (Usada apenas dentro do Modal).
  */
 const addDetail = () => {
     const block = formData.secoes[currentSectionIndex].blocos[currentBlockIndex];
@@ -569,7 +568,7 @@ const addDetail = () => {
 };
 
 /**
- * Remove um par Rótulo:Valor (Detalhe) de um bloco (NOVA: Usada apenas dentro do Modal).
+ * Remove um par Rótulo:Valor (Detalhe) de um bloco (Usada apenas dentro do Modal).
  */
 const removeDetail = (detailIndex) => {
     const block = formData.secoes[currentSectionIndex].blocos[currentBlockIndex];
@@ -580,7 +579,7 @@ const removeDetail = (detailIndex) => {
 
 /**
  * Atualiza um par Rótulo:Valor (Detalhe) dentro de um bloco.
- * É global para ser usado com oninput. (MANTIDA)
+ * É global para ser usado com oninput.
  */
 window.updateDetail = (sectionIndex, blockIndex, detailIndex, field, value) => {
     // Note que esta função usa os índices passados no HTML, não o estado global `current...Index`
@@ -591,7 +590,7 @@ window.updateDetail = (sectionIndex, blockIndex, detailIndex, field, value) => {
 // ------------------- Funções de Renderização do Editor Modular -------------------
 
 /**
- * Renderiza o editor de detalhes DENTRO do Modal. (MODIFICADA)
+ * Renderiza o editor de detalhes DENTRO do Modal.
  * @param {object} block
  * @param {number} sectionIndex
  * @param {number} blockIndex
@@ -599,7 +598,6 @@ window.updateDetail = (sectionIndex, blockIndex, detailIndex, field, value) => {
 const renderDetailEditorInModal = (block, sectionIndex, blockIndex) => {
     const detailsContainer = document.getElementById('detalhes-list');
     const details = block.detalhes || [];
-    const isCredencial = block.tipoBloco === 'credenciais';
     let html = '';
 
     if (details.length === 0) {
@@ -638,7 +636,7 @@ const renderDetailEditorInModal = (block, sectionIndex, blockIndex) => {
 };
 
 /**
- * Renderiza o cartão de um bloco no editor principal (apenas visualização/botão de edição). (MANTIDA)
+ * Renderiza o cartão de um bloco no editor principal (apenas visualização/botão de edição).
  */
 const renderBlockEditor = (block, sectionIndex, blockIndex) => {
     const type = block.tipoBloco;
@@ -669,12 +667,12 @@ const renderBlockEditor = (block, sectionIndex, blockIndex) => {
 };
 
 /**
- * Renderiza o HTML de uma única seção no editor. (MANTIDA)
+ * Renderiza o HTML de uma única seção no editor.
  */
 const renderSectionEditor = (section, sectionIndex) => {
     const blocksHtml = (section.blocos || [])
-                        .map((block, blockIndex) => renderBlockEditor(block, sectionIndex, blockIndex))
-                        .join('');
+                            .map((block, blockIndex) => renderBlockEditor(block, sectionIndex, blockIndex))
+                            .join('');
     
     const addBlockDropdown = `
         <div class="dropdown d-grid">
@@ -751,7 +749,7 @@ const renderSections = () => {
 
 
 /**
- * Anexa listeners a botões criados dinamicamente (remover seção, adicionar detalhe, etc.). (MANTIDA)
+ * Anexa listeners a botões criados dinamicamente (remover seção, adicionar detalhe, etc.).
  */
 const attachDynamicListeners = () => {
     // 1. Listeners para Remover Seção
@@ -783,7 +781,7 @@ const attachDynamicListeners = () => {
         };
     });
 
-    // 4. Listeners para Editar Seção (NOVO)
+    // 4. Listeners para Editar Seção
     document.querySelectorAll('.btn-edit-section').forEach(button => {
         button.onclick = (e) => {
             e.preventDefault();
@@ -792,7 +790,7 @@ const attachDynamicListeners = () => {
         };
     });
 
-    // 5. Listeners para Editar Bloco (NOVO)
+    // 5. Listeners para Editar Bloco
     document.querySelectorAll('.btn-edit-block').forEach(button => {
         button.onclick = (e) => {
             e.preventDefault();
@@ -801,33 +799,159 @@ const attachDynamicListeners = () => {
             handleEditBlock(sectionIndex, blockIndex);
         };
     });
-    
-    // 6. Listener para Adicionar Detalhe dentro do Modal
-    document.getElementById('btn-add-detalhe').onclick = (e) => {
-        e.preventDefault();
-        addDetail(); // Usa o índice de estado global
-    };
 };
 
 
 // ==========================================================
-// 4. INICIALIZAÇÃO E LISTENERS ESTÁTICOS (MODIFICADO)
+// FUNÇÕES DE AUTENTICAÇÃO E PERMISSÃO
+// ==========================================================
+
+/**
+ * Decodifica o payload de um JWT (sem validação de assinatura).
+ * @param {string} token
+ * @returns {object|null}
+ */
+const decodeToken = (token) => {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+};
+
+
+/**
+ * Carrega informações do usuário na Navbar e verifica a validade do token.
+ * Redireciona se o token for inválido ou ausente.
+ * Exibe o link de administração apenas se o usuário for 'admin'.
+ */
+const checkAuthAndLoadUser = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.log('Token não encontrado. Redirecionando para login.');
+        window.location.href = 'login.html';
+        return null;
+    }
+
+    const payload = decodeToken(token);
+
+    // Verifica expiração
+    if (!payload || (payload.exp * 1000 < Date.now())) {
+        console.log('Token expirado ou inválido. Redirecionando para login.');
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+        return null;
+    }
+
+    // 1. Define a role globalmente (em minúsculas para padronização)
+    window.userRole = (payload.role || '').toLowerCase(); 
+
+    // Preencher a Navbar com dados do usuário
+    const userNameElement = document.getElementById('user-name');
+    const userRoleElement = document.getElementById('user-role');
+    
+    // >> ALTERAÇÃO PARA PEGAR APENAS O PRIMEIRO NOME <<
+    let nomeExibicao = 'Usuário';
+
+    if (payload.email) {
+        // 1. Pega a parte antes do '@' (ex: diego.salles)
+        const parteInicial = payload.email.split('@')[0]; 
+
+        // 2. Tenta separar por '.' ou '_' e pega a primeira parte (ex: diego)
+        if (parteInicial.includes('.')) {
+            nomeExibicao = parteInicial.split('.')[0];
+        } else if (parteInicial.includes('_')) {
+            nomeExibicao = parteInicial.split('_')[0];
+        } else {
+            // Se não tiver . ou _, usa a parte inicial completa
+            nomeExibicao = parteInicial; 
+        }
+        
+        // Opcional: Capitaliza o primeiro nome (ex: Diego)
+        nomeExibicao = nomeExibicao.charAt(0).toUpperCase() + nomeExibicao.slice(1);
+    }
+
+    if (userNameElement && userRoleElement) {
+        // Preenche o 'user-name' com o primeiro nome extraído
+        userNameElement.textContent = nomeExibicao;
+        
+        // Preenche o 'user-role' com o cargo
+        userRoleElement.textContent = payload.role || 'Geral';
+    }
+    
+    // ===============================================
+    // LÓGICA DE PERMISSÃO PARA UI
+    // ===============================================
+    
+    const adminLink = document.getElementById('nav-link-admin');
+    const btnNewDocument = document.getElementById('btn-new-document'); // Botão "Novo Documento"
+
+    // Permissão de ADMIN (Gerenciar Usuários)
+    if (adminLink) {
+        if (window.userRole === 'adm') {
+            adminLink.classList.remove('d-none'); 
+            payload.isAdmin = true; 
+        } else {
+            adminLink.classList.add('d-none');
+            payload.isAdmin = false;
+        }
+    }
+    
+    // Permissão de EDIÇÃO/CRIAÇÃO DE DOCUMENTOS
+    // Se a role for 'visualizador', esconde o botão "Novo Documento"
+    if (btnNewDocument) {
+        if (window.userRole === 'visualizador') {
+            btnNewDocument.classList.add('d-none');
+        } else {
+            btnNewDocument.classList.remove('d-none');
+        }
+    }
+    
+    return payload;
+};
+
+/**
+ * Função de Logout.
+ */
+const handleLogout = () => {
+    if (confirm('Deseja realmente sair do sistema?')) {
+        localStorage.removeItem('token');
+        window.location.href = 'login.html';
+    }
+};
+
+
+// ==========================================================
+// 4. INICIALIZAÇÃO E LISTENERS ESTÁTICOS
 // ==========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicializar instâncias do Bootstrap Modal
+    
+    // 1. **VERIFICAÇÃO DE AUTENTICAÇÃO**
+    const userPayload = checkAuthAndLoadUser();
+    if (!userPayload) {
+        // Se a autenticação falhar, o script para, pois checkAuth já redirecionou.
+        return; 
+    }
+
+    // 2. Inicializar instâncias do Bootstrap Modal
     blockModal = new bootstrap.Modal(document.getElementById('blockEditorModal'));
     sectionModal = new bootstrap.Modal(document.getElementById('sectionEditorModal'));
     
-    // Inicializar a primeira aba (Lista)
+    // 3. Inicializar a primeira aba (Lista) e buscar os documentos
     switchTab('list');
-    fetchDocuments();
+    fetchDocuments(); 
 
-    // Listeners do formulário principal
+    // 4. Listeners do formulário principal
     document.getElementById('tituloDocumento').addEventListener('input', (e) => updateFormData('tituloDocumento', e.target.value));
     document.getElementById('identificador').addEventListener('input', (e) => updateFormData('identificador', e.target.value.toUpperCase().replace(/\s/g, '-'))); 
-    
-    // Botões Estáticos
+
+    // 5. Botões Estáticos e de Ações Globais
     document.getElementById('btn-new-document').onclick = handleNewDocument;
     document.getElementById('btn-create-first').onclick = handleNewDocument;
     document.getElementById('btn-save-document').onclick = handleSaveDocument;
@@ -839,34 +963,43 @@ document.addEventListener('DOMContentLoaded', () => {
         switchTab('list');
     };
     
-    // Botões dos Modals
+    // 6. Botões dos Modals
     document.getElementById('btn-save-block').onclick = handleSaveBlockModal;
     document.getElementById('btn-save-section').onclick = handleSaveSectionModal;
 
-    // Resetar campos de bloco e detalhes ao fechar o modal
+    // 7. Resetar campos de bloco e detalhes ao fechar o modal
     document.getElementById('blockEditorModal').addEventListener('hidden.bs.modal', () => {
         document.getElementById('block-tipoBloco').disabled = false;
-        document.getElementById('block-form').reset();
+        // Se o seu HTML possui um formulário com id='block-form', descomente a linha abaixo
+        // document.getElementById('block-form').reset(); 
         currentSectionIndex = -1;
         currentBlockIndex = -1;
     });
 
-    // ==========================================================
-    // LISTENERS DE PESQUISA (NOVOS)
-    // ==========================================================
+    // 8. LISTENERS DE PESQUISA
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search-btn');
 
-    // Listener para o campo de pesquisa (input event para filtrar em tempo real)
     searchInput.addEventListener('input', (e) => {
         filterDocumentList(e.target.value);
     });
 
-    // Listener para o botão de limpar pesquisa
     clearSearchBtn.addEventListener('click', () => {
         searchInput.value = '';
         filterDocumentList(''); // Re-renderiza a lista completa
     });
+
+    // 9. Listener para o botão de Logout na Navbar
+    document.getElementById('btn-logout').onclick = handleLogout;
+    
+    // 10. Listener para Adicionar Detalhe dentro do Modal (é estático no Modal)
+    document.getElementById('btn-add-detalhe').onclick = (e) => {
+        e.preventDefault();
+        addDetail(); // Usa o índice de estado global
+    };
+
+    // 11. Anexar Listeners dinâmicos (para botões dentro das seções)
+    attachDynamicListeners();
 
 });
 

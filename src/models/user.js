@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema({
     nome_usuario: { type: String, required: true },
     email_usuario: { type: String, required: true, unique: true },
     telefone_usuario: { type: Number, required: true },
-    data_nascimento_usuario: { type: Date, required: true },
+    data_nascimento_usuario: { type: String, required: true },
     cargo_usuario: { type: String, required: true},
     
     // ROLES: adm, tecnico, visualizador

@@ -31,7 +31,7 @@ const getEmailTemplate = (codigo, appName = 'Template') => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${appName} - Recuperar Senha</title>
+        <title>Documentos 2000 - Recuperar Senha</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -75,7 +75,7 @@ const getEmailTemplate = (codigo, appName = 'Template') => {
     <body>
         <div class="container">
             <div class="header">
-                <h1>${appName}</h1>
+                <h1>Documentos 2000</h1>
                 <h2>Recuperar Senha</h2>
             </div>
             <div class="content">
@@ -85,10 +85,10 @@ const getEmailTemplate = (codigo, appName = 'Template') => {
                 <p>Código de acesso:</p>
                 <div class="code">${codigo}</div>
                 <p>Este código expira em 15 minutos.</p>
-                <p>Atenciosamente,<br>Equipe ${appName}</p>
+                <p>Atenciosamente,<br>Equipe Diego</p>
             </div>
             <div class="footer">
-                <p>© ${new Date().getFullYear()} ${appName}. Todos os direitos reservados.</p>
+                <p>© ${new Date().getFullYear()}Documentos 2000. Todos os direitos reservados.</p>
             </div>
         </div>
     </body>

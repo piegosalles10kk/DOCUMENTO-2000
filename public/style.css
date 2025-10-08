@@ -228,3 +228,51 @@ body {
 #empty-list-message p.h5, #empty-sections-message p.text-muted {
     color: #4a5568 !important; /* Cor de texto suave */
 }
+
+/* ========================================================== */
+/* 7. ESTILOS DA NAVBAR E INFORMAÇÕES DO USUÁRIO (NOVO) */
+/* ========================================================== */
+
+/* Fundo da Navbar para maior contraste */
+.navbar {
+    background-color: #ffffff; /* Fundo branco limpo */
+    border-bottom: 1px solid #e0e7ff; /* Borda suave azul claro */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sombra sutil */
+}
+
+/* Contêiner de Informações do Usuário */
+.user-info-container {
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+    text-align: right;
+}
+
+/* Nome do Usuário */
+#user-name {
+    font-weight: 600; /* Destaque */
+    color: #1f2937; /* Cor escura */
+    display: block;
+    line-height: 1.2;
+}
+
+/* Cargo/Role do Usuário */
+#user-role {
+    font-size: 0.75rem; /* Menor */
+    color: #6b7280; /* Cor de texto suave */
+    display: block;
+    line-height: 1.2;
+}
+
+/* Botão de Logout (para combinar com a estética moderna) */
+#btn-logout {
+    font-size: 0.875rem;
+    color: #ef4444; /* Cor de erro/alerta (red-500) */
+    border: 1px solid #fca5a5; /* Borda vermelha suave */
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+}
+
+#btn-logout:hover {
+    background-color: #fee2e2; /* Fundo vermelho bem claro ao passar o mouse */
+    color: #dc2626; /* Cor de texto mais escura */
+}

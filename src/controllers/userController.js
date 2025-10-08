@@ -204,7 +204,7 @@ const getEmailTemplate = (codigo, nome, appName = 'Sistema de Documentação') =
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${appName} - Recuperar Senha</title>
+        <title>Documentos 2000 - Recuperar Senha</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -267,7 +267,7 @@ const getEmailTemplate = (codigo, nome, appName = 'Sistema de Documentação') =
     <body>
         <div class="container">
             <div class="header">
-                <h1>📚 ${appName}</h1>
+                <h1> Documentos 2000</h1>
                 <h2>Recuperação de Senha</h2>
             </div>
             <div class="content">
@@ -286,10 +286,10 @@ const getEmailTemplate = (codigo, nome, appName = 'Sistema de Documentação') =
                     <strong>ℹ️ Importante:</strong> Este código expira em <strong>15 minutos</strong> por questões de segurança.
                 </div>
                 
-                <p>Atenciosamente,<br><strong>Equipe ${appName}</strong></p>
+                <p>Atenciosamente,<br><strong>Diego Salles</strong></p>
             </div>
             <div class="footer">
-                <p>© ${new Date().getFullYear()} ${appName}. Todos os direitos reservados.</p>
+                <p>© ${new Date().getFullYear()} Documentos 2000. Todos os direitos reservados.</p>
                 <p>Este é um email automático, por favor não responda.</p>
             </div>
         </div>
@@ -337,7 +337,7 @@ const sendRecoveryCode = async (req, res) => {
         const mailOptions = {
             from: `${process.env.APP_NAME || 'Sistema de Documentação'} <${process.env.EMAIL_USER}>`,
             to: user.email_usuario,
-            subject: '🔐 Recuperação de Senha - Código de Acesso',
+            subject: 'Recuperação de Senha - Código de Acesso',
             html: getEmailTemplate(codigo, user.nome_usuario, process.env.APP_NAME || 'Sistema de Documentação'),
             text: `Olá ${user.nome_usuario},\n\nCódigo de recuperação: ${codigo}\n\nEste código expira em 15 minutos.`
         };
