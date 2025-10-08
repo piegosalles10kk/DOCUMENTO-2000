@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar Senha - Sistema de Documentação</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
+    <style>
+        body {
+            background: linear-gradient(to bottom right, #eff6ff, #e0e7ff);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .recovery-container {
+            max-width: 500px;
+            width: 100%;
+        }
+        .card {
+            border: none;
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            background: linear-gradient(to right, #2563eb, #4f46e5);
+            color: white;
+            border-radius: 1rem 1rem 0 0 !important;
+            padding: 2rem;
+            text-align: center;
+        }
+        .btn-primary {
+            background: linear-gradient(to right, #2563eb, #4f46e5);
+            border: none;
+            padding: 0.75rem;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(to right, #1d4ed8, #4338ca);
+        }
+        .form-control:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+        .code-input {
+            font-size: 1.5rem;
+            text-align: center;
+            letter-spacing: 0.5rem;
+            text-transform: uppercase;
+        }
+        .password-toggle {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="recovery-container">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="h3 mb-2"><i class="fas fa-key"></i> Recuperar Senha</h1>
+                <p class="mb-0">Siga os passos para redefinir sua senha</p>
+            </div>
+            <div class="card-body p-4">
+                <div id="alert-container"></div>
+                
+                <!-- Passo 1: Solicitar código -->
+                <div id="step1" class="step active">
+                    <p class="text-muted mb-4">Digite seu email para receber o código de recuperação:</p>
+                    <form id="form-request-code">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input type="email" class="form-control" id="email" placeholder="seu@email.com" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="btn-request-code">
+                            <i class="fas fa-paper-plane me-2"></i>Enviar Código
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Passo 2: Verificar código -->
+                <div id="step2" class="step">
+                    <p class="text-muted mb-4">Digite o código de 6 dígitos enviado para <strong id="email-display"></strong>:</p>
+                    <form id="form-verify-code">
+                        <div class="mb-3">
+                            <label for="code" class="form-label">Código de Verificação</label>
+                            <input type="text" class="form-control code-input" id="code" placeholder="XXXXXX" maxlength="6" required>
+                            <small class="text-muted">O código expira em 15 minutos</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="btn-verify-code">
+                            <i class="fas fa-check me-2"></i>Verificar Código
+                        </button>
+                        <button type="button" class="btn btn-link w-100 mt-2" onclick="backToStep1()">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- Passo 3: Nova senha -->
+                <div id="step3" class="step">
+                    <p class="text-muted mb-4">Digite sua nova senha:</p>
+                    <form id="form-new-password">
+                        <div class="mb-3">
+                            <label for="new-password" class="form-label">Nova Senha</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="new-password" placeholder="Mínimo 6 caracteres" required minlength="6">
+                                <span class="input-group-text password-toggle" onclick="togglePassword('new-password', 'toggle-icon-1')">
+                                    <i class="fas fa-eye" id="toggle-icon-1"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirm-password" class="form-label">Confirmar Senha</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="confirm-password" placeholder="Repita a senha" required minlength="6">
+                                <span class="input-group-text password-toggle" onclick="togglePassword('confirm-password', 'toggle-icon-2')">
+                                    <i class="fas fa-eye" id="toggle-icon-2"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="btn-update-password">
+                            <i class="fas fa-save me-2"></i>Atualizar Senha
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="login.html" class="text-decoration-none">
+                <i class="fas fa-arrow-left me-2"></i>Voltar para o Login
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_URL = '/api/users';
+        let userEmail = '';
+        let recoveryCode = '';
+        
+        // Toggle de visibilidade da senha
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        
+        // Exibir alertas
+        function showAlert(message, type = 'danger') {
+            const alertContainer = document.getElementById('alert-container');
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'info' ? 'info-circle' : 'exclamation-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+        
+        // Navegar entre passos
+        function showStep(stepNumber) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById(`step${stepNumber}`).classList.add('active');
+            document.getElementById('alert-container').innerHTML = '';
+        }
+        
+        function backToStep1() {
+            showStep(1);
+            userEmail = '';
+            recoveryCode = '';
+        }
+        
+        // Passo 1: Solicitar código
+        document.getElementById('form-request-code').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const btnRequestCode = document.getElementById('btn-request-code');
+            
+            btnRequestCode.disabled = true;
+            btnRequestCode.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enviando...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/recover/${encodeURIComponent(email)}`);
+                const data = await response.json();
+                
+                if (data.sucesso) {
+                    userEmail = email;
+                    document.getElementById('email-display').textContent = email;
+                    showAlert('Código enviado para seu email com sucesso!', 'success');
+                    setTimeout(() => showStep(2), 2000);
+                } else {
+                    showAlert(data.msg || 'Erro ao enviar código');
+                }
+            } catch (error) {
+                console.error('Erro ao solicitar código:', error);
+                showAlert('Erro ao conectar com o servidor');
+            } finally {
+                btnRequestCode.disabled = false;
+                btnRequestCode.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Enviar Código';
+            }
+        });
+        
+        // Passo 2: Verificar código
+        document.getElementById('form-verify-code').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const code = document.getElementById('code').value.toUpperCase();
+            const btnVerifyCode = document.getElementById('btn-verify-code');
+            
+            btnVerifyCode.disabled = true;
+            btnVerifyCode.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/verify-code/${encodeURIComponent(userEmail)}/${code}`);
+                const data = await response.json();
+                
+                if (data.sucesso) {
+                    recoveryCode = code;
+                    showAlert('Código verificado! Defina sua nova senha.', 'success');
+                    setTimeout(() => showStep(3), 2000);
+                } else {
+                    showAlert(data.msg || 'Código incorreto ou expirado');
+                }
+            } catch (error) {
+                console.error('Erro ao verificar código:', error);
+                showAlert('Erro ao conectar com o servidor');
+            } finally {
+                btnVerifyCode.disabled = false;
+                btnVerifyCode.innerHTML = '<i class="fas fa-check me-2"></i>Verificar Código';
+            }
+        });
+        
+        // Passo 3: Atualizar senha
+        document.getElementById('form-new-password').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const btnUpdatePassword = document.getElementById('btn-update-password');
+            
+            if (newPassword !== confirmPassword) {
+                showAlert('As senhas não conferem!');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showAlert('A senha deve ter no mínimo 6 caracteres');
+                return;
+            }
+            
+            btnUpdatePassword.disabled = true;
+            btnUpdatePassword.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Atualizando...';
+            
+            try {
+                const response = await fetch(`${API_URL}/auth/update-password-recovery`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email_usuario: userEmail,
+                        codigoRecuperarSenha: recoveryCode,
+                        senha_usuario: newPassword,
+                        confirmarSenha: confirmPassword
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.sucesso) {
+                    showAlert('Senha atualizada com sucesso! Redirecionando...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 2000);
+                } else {
+                    showAlert(data.msg || 'Erro ao atualizar senha');
+                    btnUpdatePassword.disabled = false;
+                    btnUpdatePassword.innerHTML = '<i class="fas fa-save me-2"></i>Atualizar Senha';
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar senha:', error);
+                showAlert('Erro ao conectar com o servidor');
+                btnUpdatePassword.disabled = false;
+                btnUpdatePassword.innerHTML = '<i class="fas fa-save me-2"></i>Atualizar Senha';
+            }
+        });
+        
+        // Converter código para maiúsculas automaticamente
+        document.getElementById('code').addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase();
+        });
+    </script>
+</body>
+</html>

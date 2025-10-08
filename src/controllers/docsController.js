@@ -4,7 +4,8 @@ const Documentation = require('../models/Documentation');
 const getAllDocs = async (req, res) => {
     try {
         const docs = await Documentation.find()
-            .select('tituloDocumento identificador ultimaAtualizacao')
+            .select('tituloDocumento identificador ultimaAtualizacao criadoPor')
+            .populate('criadoPor', 'nome_usuario email_usuario')
             .sort({ ultimaAtualizacao: -1 });
         
         return res.status(200).json({
@@ -25,7 +26,8 @@ const getAllDocs = async (req, res) => {
 const getDocByIdentifier = async (req, res) => {
     try {
         const identifier = req.params.identifier;
-        const doc = await Documentation.findOne({ identificador: identifier });
+        const doc = await Documentation.findOne({ identificador: identifier })
+            .populate('criadoPor', 'nome_usuario email_usuario');
 
         if (!doc) {
             return res.status(404).json({
@@ -50,7 +52,13 @@ const getDocByIdentifier = async (req, res) => {
 // 3. [POST] Criar
 const createDoc = async (req, res) => {
     try {
-        const novoDoc = new Documentation(req.body);
+        // Adiciona o ID do usuário que está criando
+        const docData = {
+            ...req.body,
+            criadoPor: req.user._id
+        };
+        
+        const novoDoc = new Documentation(docData);
         const docSalvo = await novoDoc.save();
 
         return res.status(201).json({ 
@@ -79,11 +87,20 @@ const createDoc = async (req, res) => {
 const updateDoc = async (req, res) => {
     try {
         const identificador = req.params.identifier;
+        
+        // Remove o campo criadoPor do body para não ser alterado
+        const { criadoPor, ...updateData } = req.body;
+        
         const docAtualizado = await Documentation.findOneAndUpdate(
             { identificador }, 
-            { $set: req.body, ultimaAtualizacao: Date.now() },
+            { 
+                $set: {
+                    ...updateData,
+                    ultimaAtualizacao: Date.now()
+                }
+            },
             { new: true, runValidators: true }
-        );
+        ).populate('criadoPor', 'nome_usuario email_usuario');
 
         if (!docAtualizado) {
             return res.status(404).json({ 

@@ -1,8 +1,8 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const { User } = require('../models/model');
-const { secret } = require('../utils/secret');
+const { User } = require('../models/user');
+const secret = require('../utils/secret');
 
 
 // ==========================================
@@ -12,11 +12,11 @@ const { secret } = require('../utils/secret');
 // Buscar todos os usuários
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}, '-senha');
-        res.status(200).json({ users });
+        const users = await User.find({}, '-senha_usuario');
+        res.status(200).json({ sucesso: true, users });
     } catch (error) {
         console.log('Erro ao buscar usuários:', error);
-        res.status(500).json({ msg: 'Erro ao buscar usuários' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao buscar usuários' });
     }
 };
 
@@ -25,14 +25,14 @@ const getUser = async (req, res) => {
     const id = req.params.id;
     
     try {
-        const user = await User.findById(id, '-senha');
+        const user = await User.findById(id, '-senha_usuario');
         if (!user) {
-            return res.status(404).json({ msg: 'Usuário não encontrado' });
+            return res.status(404).json({ sucesso: false, msg: 'Usuário não encontrado' });
         }
-        res.status(200).json({ user });
+        res.status(200).json({ sucesso: true, user });
     } catch (error) {
         console.log('Erro ao buscar usuário:', error);
-        res.status(500).json({ msg: 'Erro ao buscar usuário' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao buscar usuário' });
     }
 };
 
@@ -43,14 +43,20 @@ const updateUser = async (req, res) => {
     try {
         const user = await User.findById(id);
         if (!user) {
-            return res.status(404).json({ msg: 'Usuário não encontrado' });
+            return res.status(404).json({ sucesso: false, msg: 'Usuário não encontrado' });
+        }
+
+        // Se estiver atualizando senha, fazer hash
+        if (req.body.senha_usuario) {
+            const salt = await bcrypt.genSalt(12);
+            req.body.senha_usuario = await bcrypt.hash(req.body.senha_usuario, salt);
         }
 
         await User.findByIdAndUpdate(id, req.body, { new: true });
-        res.status(200).json({ msg: 'Usuário atualizado com sucesso' });
+        res.status(200).json({ sucesso: true, msg: 'Usuário atualizado com sucesso' });
     } catch (error) {
         console.log('Erro ao atualizar usuário:', error);
-        res.status(500).json({ msg: 'Erro ao atualizar usuário' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao atualizar usuário' });
     }
 };
 
@@ -60,10 +66,10 @@ const deleteUser = async (req, res) => {
     
     try {
         await User.findByIdAndDelete(id);
-        res.status(200).json({ msg: 'Usuário deletado com sucesso' });
+        res.status(200).json({ sucesso: true, msg: 'Usuário deletado com sucesso' });
     } catch (error) {
         console.log('Erro ao deletar usuário:', error);
-        res.status(500).json({ msg: 'Erro ao deletar usuário' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao deletar usuário' });
     }
 };
 
@@ -71,7 +77,7 @@ const deleteUser = async (req, res) => {
 // AUTENTICAÇÃO
 // ==========================================
 
-// Criar usuário
+// Criar usuário (apenas por admin via API direta)
 const createUser = async (req, res) => {
     const { 
         nome_usuario,
@@ -84,22 +90,27 @@ const createUser = async (req, res) => {
         confirmarSenha 
     } = req.body;
 
-    // ✅ Correção: Validação de senhas mais clara
+    // Validação de senhas
     if (senha_usuario !== confirmarSenha) {
-        return res.status(422).json({ message: 'Senhas não conferem!' });
+        return res.status(422).json({ sucesso: false, message: 'Senhas não conferem!' });
     }
 
-    // ✅ Correção: Validação de campos obrigatórios mais clara
+    // Validação de campos obrigatórios
     const requiredFields = [nome_usuario, email_usuario, telefone_usuario, data_nascimento_usuario, cargo_usuario, acessos_usuario, senha_usuario];
     if (requiredFields.some(field => !field)) {
-        return res.status(422).json({ message: 'Todos os campos são obrigatórios!' });
+        return res.status(422).json({ sucesso: false, message: 'Todos os campos são obrigatórios!' });
+    }
+
+    // Validação de role
+    if (!['adm', 'tecnico', 'visualizador'].includes(acessos_usuario)) {
+        return res.status(422).json({ sucesso: false, message: 'Role inválida! Use: adm, tecnico ou visualizador' });
     }
 
     try {
         // Verificar se usuário já existe
         const userExists = await User.findOne({ email_usuario });
         if (userExists) {
-            return res.status(422).json({ message: 'Email já cadastrado!' });
+            return res.status(422).json({ sucesso: false, message: 'Email já cadastrado!' });
         }
 
         // Hash da senha
@@ -118,10 +129,10 @@ const createUser = async (req, res) => {
         });
 
         await user.save();
-        res.status(201).json({ msg: 'Usuário criado com sucesso' });
+        res.status(201).json({ sucesso: true, msg: 'Usuário criado com sucesso' });
     } catch (error) {
         console.log('Erro ao criar usuário:', error); 
-        res.status(500).json({ msg: 'Erro ao criar usuário' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao criar usuário' });
     }
 };
 
@@ -130,33 +141,44 @@ const loginUser = async (req, res) => {
     const { email_usuario, senha_usuario } = req.body;
 
     if (!email_usuario || !senha_usuario) {
-        return res.status(422).json({ message: 'Email e senha são obrigatórios!' });
+        return res.status(422).json({ sucesso: false, message: 'Email e senha são obrigatórios!' });
     }
 
     try {
         const user = await User.findOne({ email_usuario });
         if (!user) {
-            return res.status(404).json({ message: 'Usuário não cadastrado!' });
+            return res.status(404).json({ sucesso: false, message: 'Usuário não cadastrado!' });
         }
 
         const checkPassword = await bcrypt.compare(senha_usuario, user.senha_usuario);
         if (!checkPassword) {
-            return res.status(422).json({ message: 'Senha inválida!' });
+            return res.status(422).json({ sucesso: false, message: 'Senha inválida!' });
         }
 
-        // ✅ Correção: Usando a variável 'secret' importada
-        const token = jwt.sign({ id: user._id }, secret, {
-            expiresIn: '1d'
+        // Criar token com role incluída
+        const token = jwt.sign({ 
+            id: user._id,
+            role: user.acessos_usuario,
+            email: user.email_usuario
+        }, secret, {
+            expiresIn: '8h'
         });
 
         res.status(200).json({
+            sucesso: true,
             msg: 'Autenticação realizada com sucesso',
             token,
-            id: user._id
+            user: {
+                id: user._id,
+                nome: user.nome_usuario,
+                email: user.email_usuario,
+                role: user.acessos_usuario,
+                cargo: user.cargo_usuario
+            }
         });
     } catch (error) {
         console.log('Erro ao autenticar:', error);
-        res.status(500).json({ msg: 'Erro ao autenticar usuário' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao autenticar usuário' });
     }
 };
 
@@ -169,13 +191,13 @@ const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
     auth: {
-        user: 'chamadoschromatox@gmail.com', 
-        pass: 'glsdpiqtmubibzzf', 
+        user: process.env.EMAIL_USER, 
+        pass: process.env.EMAIL_PASS, 
     },
 });
 
-// Template HTML simples para email
-const getEmailTemplate = (codigo, appName = 'Template') => {
+// Template HTML para email
+const getEmailTemplate = (codigo, nome, appName = 'Sistema de Documentação') => {
     return `
     <!DOCTYPE html>
     <html lang="pt-BR">
@@ -191,55 +213,84 @@ const getEmailTemplate = (codigo, appName = 'Template') => {
                 background-color: #f4f4f4;
             }
             .container {
-                width: 100%;
+                max-width: 600px;
+                margin: 0 auto;
                 padding: 20px;
                 background-color: #ffffff;
             }
             .header {
                 text-align: center;
                 padding: 20px;
-                background-color: #007bff;
+                background: linear-gradient(to right, #2563eb, #4f46e5);
                 color: white;
+                border-radius: 8px 8px 0 0;
             }
             .content {
-                padding: 20px;
+                padding: 30px 20px;
             }
             .footer {
                 text-align: center;
-                padding: 10px;
-                background-color: #dddddd;
+                padding: 15px;
+                background-color: #f8f9fa;
+                border-radius: 0 0 8px 8px;
                 font-size: 12px;
-                color: #555555;
+                color: #6c757d;
             }
             .code {
-                font-size: 24px;
+                font-size: 32px;
                 font-weight: bold;
-                background-color: #f8f9fa;
-                padding: 15px;
-                border-radius: 5px;
+                background-color: #eff6ff;
+                color: #2563eb;
+                padding: 20px;
+                border-radius: 8px;
                 text-align: center;
+                margin: 25px 0;
+                letter-spacing: 5px;
+                border: 2px dashed #93c5fd;
+            }
+            .warning {
+                background-color: #fef3c7;
+                border-left: 4px solid #f59e0b;
+                padding: 12px;
                 margin: 20px 0;
-                letter-spacing: 2px;
+                border-radius: 4px;
+            }
+            .info {
+                background-color: #dbeafe;
+                border-left: 4px solid #3b82f6;
+                padding: 12px;
+                margin: 20px 0;
+                border-radius: 4px;
             }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h1>${appName}</h1>
-                <h2>Recuperar Senha</h2>
+                <h1>📚 ${appName}</h1>
+                <h2>Recuperação de Senha</h2>
             </div>
             <div class="content">
-                <p>Olá,</p>
-                <p>Foi solicitada uma recuperação de senha para sua conta.</p>
-                <p><strong>Caso não tenha sido você, ignore este email.</strong></p>
-                <p>Código de acesso:</p>
+                <p>Olá, <strong>${nome}</strong></p>
+                <p>Recebemos uma solicitação para recuperar a senha da sua conta.</p>
+                
+                <div class="warning">
+                    <strong>⚠️ Atenção:</strong> Se você não solicitou esta recuperação, ignore este email e sua senha permanecerá inalterada.
+                </div>
+                
+                <p>Use o código abaixo para redefinir sua senha:</p>
+                
                 <div class="code">${codigo}</div>
-                <p>Este código expira em 15 minutos.</p>
-                <p>Atenciosamente,<br>Equipe ${appName}</p>
+                
+                <div class="info">
+                    <strong>ℹ️ Importante:</strong> Este código expira em <strong>15 minutos</strong> por questões de segurança.
+                </div>
+                
+                <p>Atenciosamente,<br><strong>Equipe ${appName}</strong></p>
             </div>
             <div class="footer">
                 <p>© ${new Date().getFullYear()} ${appName}. Todos os direitos reservados.</p>
+                <p>Este é um email automático, por favor não responda.</p>
             </div>
         </div>
     </body>
@@ -249,7 +300,7 @@ const getEmailTemplate = (codigo, appName = 'Template') => {
 
 // Função para gerar código
 const gerarCodigo = (length = 6) => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let codigo = '';
     for (let i = 0; i < length; i++) {
         const randomIndex = Math.floor(Math.random() * characters.length);
@@ -258,42 +309,45 @@ const gerarCodigo = (length = 6) => {
     return codigo;
 };
 
-// No seu arquivo userControllers.js
+// Enviar código de recuperação
 const sendRecoveryCode = async (req, res) => {
-    // ✅ CORREÇÃO: Pega o parâmetro 'email' da rota
     const { email } = req.params;
     
     if (!email) {
-        return res.status(400).json({ msg: 'Email é obrigatório e deve ser passado na URL.' });
+        return res.status(400).json({ sucesso: false, msg: 'Email é obrigatório.' });
     }
 
     try {
-        // ✅ CORREÇÃO: Usa 'email' para buscar no banco de dados
         const user = await User.findOne({ email_usuario: email });
         
         if (!user) {
-            return res.status(404).json({ msg: 'Email não encontrado' });
+            return res.status(404).json({ sucesso: false, msg: 'Email não encontrado' });
         }
         
-        // ... o restante do código segue inalterado
-        const testeCodigo = gerarCodigo(6);
-        user.codigoRecuperarSenha = testeCodigo;
+        // Gerar código e definir expiração (15 minutos)
+        const codigo = gerarCodigo(6);
+        const expiracao = new Date();
+        expiracao.setMinutes(expiracao.getMinutes() + 15);
+        
+        user.codigoRecuperarSenha = codigo;
+        user.codigoRecuperarSenhaExpira = expiracao;
         await user.save();
         
+        // Configurar email
         const mailOptions = {
-            from: `Sua App <chamadoschromatox@gmail.com>`,
+            from: `${process.env.APP_NAME || 'Sistema de Documentação'} <${process.env.EMAIL_USER}>`,
             to: user.email_usuario,
-            subject: 'Recuperar Senha',
-            html: getEmailTemplate(testeCodigo, 'Sua App'),
-            text: `Código de recuperação: ${testeCodigo}`
+            subject: '🔐 Recuperação de Senha - Código de Acesso',
+            html: getEmailTemplate(codigo, user.nome_usuario, process.env.APP_NAME || 'Sistema de Documentação'),
+            text: `Olá ${user.nome_usuario},\n\nCódigo de recuperação: ${codigo}\n\nEste código expira em 15 minutos.`
         };
 
         await transporter.sendMail(mailOptions);
-        res.status(200).json({ msg: 'Email enviado com sucesso!' });
+        res.status(200).json({ sucesso: true, msg: 'Código enviado para o email com sucesso!' });
         
     } catch (error) {
         console.log('Erro ao enviar email:', error);
-        res.status(500).json({ msg: 'Erro ao enviar email' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao enviar email de recuperação' });
     }
 };
 
@@ -304,19 +358,32 @@ const verificarCodigo = async (req, res) => {
     try {
         const user = await User.findOne({ email_usuario: email });
         if (!user) {
-            return res.status(404).json({ msg: 'Email não encontrado' });
+            return res.status(404).json({ sucesso: false, msg: 'Email não encontrado' });
         }
-        if (user.codigoRecuperarSenha === codigo) {
+
+        // Verificar se o código existe
+        if (!user.codigoRecuperarSenha) {
+            return res.status(400).json({ sucesso: false, msg: 'Nenhum código de recuperação foi solicitado' });
+        }
+
+        // Verificar se o código expirou
+        if (user.codigoRecuperarSenhaExpira && new Date() > user.codigoRecuperarSenhaExpira) {
+            return res.status(400).json({ sucesso: false, msg: 'Código expirado. Solicite um novo código.' });
+        }
+
+        // Verificar se o código está correto
+        if (user.codigoRecuperarSenha === codigo.toUpperCase()) {
             return res.status(200).json({ 
+                sucesso: true,
                 msg: 'Código verificado com sucesso!', 
                 idUsuario: user._id 
             });
         } else {
-            return res.status(400).json({ msg: 'Código incorreto' });
+            return res.status(400).json({ sucesso: false, msg: 'Código incorreto' });
         }
     } catch (error) {
         console.log('Erro ao verificar código:', error);
-        res.status(500).json({ msg: 'Erro ao verificar código' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao verificar código' });
     }
 };
 
@@ -324,30 +391,54 @@ const verificarCodigo = async (req, res) => {
 const updatePasswordRecovery = async (req, res) => {
     const { email_usuario, codigoRecuperarSenha, senha_usuario, confirmarSenha } = req.body;
 
-    if (!senha_usuario || senha_usuario !== confirmarSenha) {
-        return res.status(422).json({ msg: 'Senhas não conferem!' });
+    // Validações
+    if (!email_usuario || !codigoRecuperarSenha || !senha_usuario || !confirmarSenha) {
+        return res.status(422).json({ sucesso: false, msg: 'Todos os campos são obrigatórios' });
+    }
+
+    if (senha_usuario !== confirmarSenha) {
+        return res.status(422).json({ sucesso: false, msg: 'Senhas não conferem!' });
+    }
+
+    if (senha_usuario.length < 6) {
+        return res.status(422).json({ sucesso: false, msg: 'A senha deve ter no mínimo 6 caracteres' });
     }
 
     try {
         const user = await User.findOne({ email_usuario });
         if (!user) {
-            return res.status(404).json({ msg: 'Usuário não encontrado' });
-        }
-        if (user.codigoRecuperarSenha !== codigoRecuperarSenha) {
-            return res.status(400).json({ msg: 'Código incorreto' });
+            return res.status(404).json({ sucesso: false, msg: 'Usuário não encontrado' });
         }
 
+        // Verificar se o código existe
+        if (!user.codigoRecuperarSenha) {
+            return res.status(400).json({ sucesso: false, msg: 'Nenhum código de recuperação foi solicitado' });
+        }
+
+        // Verificar se o código expirou
+        if (user.codigoRecuperarSenhaExpira && new Date() > user.codigoRecuperarSenhaExpira) {
+            return res.status(400).json({ sucesso: false, msg: 'Código expirado. Solicite um novo código.' });
+        }
+
+        // Verificar se o código está correto
+        if (user.codigoRecuperarSenha !== codigoRecuperarSenha.toUpperCase()) {
+            return res.status(400).json({ sucesso: false, msg: 'Código incorreto' });
+        }
+
+        // Hash da nova senha
         const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(senha_usuario, salt);
 
-        // ✅ Correção: Usando o campo correto do modelo 'senha_usuario'
+        // Atualizar senha e limpar código
         user.senha_usuario = passwordHash;
         user.codigoRecuperarSenha = undefined;
+        user.codigoRecuperarSenhaExpira = undefined;
         await user.save();
-        res.status(200).json({ msg: 'Senha atualizada com sucesso!' });
+        
+        res.status(200).json({ sucesso: true, msg: 'Senha atualizada com sucesso!' });
     } catch (error) {
         console.log('Erro ao atualizar senha:', error);
-        res.status(500).json({ msg: 'Erro ao atualizar senha' });
+        res.status(500).json({ sucesso: false, msg: 'Erro ao atualizar senha' });
     }
 };
 

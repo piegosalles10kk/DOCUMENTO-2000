@@ -39,7 +39,7 @@ const SecaoSchema = new mongoose.Schema(); // Definido para recursividade
 
 SecaoSchema.add({
     tituloSecao: { type: String, required: true }, // OBRIGATÓRIO
-    subtituloSecao: { type: String },            // Opcional
+    subtituloSecao: { type: String },            // Opcional
 
     blocos: {
         type: [BlocoConteudoSchema],
@@ -71,6 +71,13 @@ const DocumentacaoSchema = new mongoose.Schema({
     ultimaAtualizacao: { 
         type: Date, 
         default: Date.now 
+    },
+    
+    // Rastreamento de criação
+    criadoPor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
     
     // Array de Seções Modulares
