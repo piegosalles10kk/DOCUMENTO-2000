@@ -1,10 +1,12 @@
+require('dotenv').config(); 
 const express = require('express');
 const path = require('path');
 const connectDB = require('./src/config/dbConnect'); 
 const docsRoutes = require('./src/routes/docsRoute');
+const userRoutes = require('./src/routes/userRoutes');
 
 const PORT = process.env.PORT || 1100;
-const HOST = process.env.HOST || '0.0.0.0'; // Permite acesso externo
+const HOST = process.env.HOST || '0.0.0.0'; 
 
 const app = express();
 
@@ -28,6 +30,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/docs', docsRoutes);
+app.use('/api/users', userRoutes);
 
 // Rota de renderização do documento (EJS)
 app.get('/render/:identifier', async (req, res) => {
