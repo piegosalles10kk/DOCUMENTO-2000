@@ -48,8 +48,8 @@ Sistema completo de gerenciamento de documentação técnica com autenticação,
 ### 1. Clone o repositório
 
 ```bash
-git clone <seu-repositorio>
-cd documenta-bug-refactored
+git clone https://github.com/piegosalles10kk/DOCUMENTO-2000/
+cd DOCUMENTO-2000
 ```
 
 ### 2. Instale as dependências
