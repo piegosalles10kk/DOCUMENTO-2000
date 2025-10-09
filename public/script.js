@@ -1,4 +1,4 @@
-const API_URL = '/api/docs';
+const API_URL = 'http://172.16.50.20:1100/api/docs';
 
 // ==========================================================
 // ESTADO GLOBAL DA APLICAÇÃO

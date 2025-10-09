@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # Serviço da Aplicação Node.js (Servidor Express)
+  app:
+    # 1. Constrói a imagem a partir do Dockerfile no diretório atual
+    build: .
+    
+    # 2. Mapeia a porta do host para a porta do contêiner (1100)
+    # HostPort:ContainerPort
+    ports:
+      - "1100:1100" 
+      
+    # 3. Define as variáveis de ambiente para o contêiner
+    environment:
+      MONGO_URI: mongodb://host.docker.internal:27017/infra_docs    
+      PORT: 1100
+      HOST: 0.0.0.0       
+    
+    # 5. Reinicia se falhar (útil para desenvolvimento)
+    restart: always

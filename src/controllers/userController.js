@@ -204,7 +204,7 @@ const getEmailTemplate = (codigo, nome, appName = 'Sistema de Documentação') =
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Documentos 2000 - Recuperar Senha</title>
+        <title>${appName} - Recuperar Senha</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -267,7 +267,7 @@ const getEmailTemplate = (codigo, nome, appName = 'Sistema de Documentação') =
     <body>
         <div class="container">
             <div class="header">
-                <h1> Documentos 2000</h1>
+                <h1> ${appName}</h1>
                 <h2>Recuperação de Senha</h2>
             </div>
             <div class="content">
@@ -286,10 +286,10 @@ const getEmailTemplate = (codigo, nome, appName = 'Sistema de Documentação') =
                     <strong>ℹ️ Importante:</strong> Este código expira em <strong>15 minutos</strong> por questões de segurança.
                 </div>
                 
-                <p>Atenciosamente,<br><strong>Diego Salles</strong></p>
+                <p>Atenciosamente,<br><strong>Equipe ${appName}</strong></p>
             </div>
             <div class="footer">
-                <p>© ${new Date().getFullYear()} Documentos 2000. Todos os direitos reservados.</p>
+                <p>© ${new Date().getFullYear()} ${appName}. Todos os direitos reservados.</p>
                 <p>Este é um email automático, por favor não responda.</p>
             </div>
         </div>

@@ -1,0 +1,11 @@
+PORT=1100
+
+# JWT Secret
+SECRET=
+
+# Configurações de Email (Gmail)
+EMAIL_USER=
+EMAIL_PASS=
+
+# Configurações da Aplicação
+APP_NAME=Nome do app

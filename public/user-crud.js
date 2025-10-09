@@ -1,7 +1,7 @@
 // A API_USERS_URL deve ser o endpoint do seu backend para gerenciar usuários
 // Se seu backend está em 172.16.50.20:1100, use o caminho completo para garantir que funcione, 
 // caso contrário, mantenha o caminho relativo '/api/users'.
-const API_USERS_URL = '/api/users'; 
+const API_USERS_URL = 'api/users'; 
 
 // Estado Global
 let userList = [];
